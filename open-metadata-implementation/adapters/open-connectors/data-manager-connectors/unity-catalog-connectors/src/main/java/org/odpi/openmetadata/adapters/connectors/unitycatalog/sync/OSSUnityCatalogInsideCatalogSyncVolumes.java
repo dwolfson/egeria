@@ -4,6 +4,7 @@
 package org.odpi.openmetadata.adapters.connectors.unitycatalog.sync;
 
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.controls.UnityCatalogPlaceholderProperty;
+import org.odpi.openmetadata.adapters.connectors.unitycatalog.ffdc.UCAuditCode;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.properties.SchemaInfo;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.properties.VolumeInfo;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.properties.VolumeType;
@@ -134,12 +135,12 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
                     // this is not necessarily an error
                 }
 
-                MemberAction memberAction;
+                MemberAction memberAction = MemberAction.NO_ACTION;
                 if (volumeInfo == null)
                 {
                     memberAction = nextElement.getMemberAction(null, null);
                 }
-                else
+                else if (noMismatchInExternalIdentifier(volumeInfo.getVolume_id(), nextElement))
                 {
                     memberAction = nextElement.getMemberAction(this.getDateFromLong(volumeInfo.getCreated_at()),
                                                                this.getDateFromLong(volumeInfo.getUpdated_at()));
@@ -159,7 +160,7 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
 
 
     /**
-     * Review all the schemas stored in UC.
+     * Review all the volumes stored in UC.
      *
      * @param iterator  Metadata collection iterator
      *
@@ -198,7 +199,10 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
                                         MemberElement memberElement = iterator.getMemberByQualifiedName(ucVolumeQualifiedName);
                                         MemberAction memberAction = memberElement.getMemberAction(this.getDateFromLong(volumeInfo.getCreated_at()),
                                                                                                   this.getDateFromLong(volumeInfo.getUpdated_at()));
-                                        this.takeAction(schemaGUID, volumeInfo.getSchema_name(), memberAction, memberElement, volumeInfo);
+                                        if (noMismatchInExternalIdentifier(volumeInfo.getVolume_id(), memberElement))
+                                        {
+                                            this.takeAction(schemaGUID, volumeInfo.getSchema_name(), memberAction, memberElement, volumeInfo);
+                                        }
                                     }
                                 }
                             }
@@ -264,7 +268,7 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
                                                                                 null,
                                                                                 null,
                                                                                 templateGUID,
-                                                                                this.getElementProperties(volumeInfo),
+                                                                                null,
                                                                                 this.getPlaceholderProperties(volumeInfo),
                                                                                 schemaGUID,
                                                                                 parentLinkTypeName,
@@ -305,7 +309,10 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
         context.addExternalIdentifier(ucVolumeGUID,
                                       deployedImplementationType.getAssociatedTypeName(),
                                       this.getExternalIdentifierProperties(volumeInfo,
-                                                                           volumeInfo.getSchema_name()));
+                                                                           volumeInfo.getSchema_name(),
+                                                                           UnityCatalogPlaceholderProperty.VOLUME_NAME.getName(),
+                                                                           volumeInfo.getVolume_id(),
+                                                                           PermittedSynchronization.FROM_THIRD_PARTY));
 
         ucFullNameToEgeriaGUID.put(volumeInfo.getFull_name(), ucVolumeGUID);
     }
@@ -331,9 +338,7 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
                                                         false,
                                                         this.getElementProperties(volumeInfo));
 
-        context.updateExternalIdentifier(egeriaVolumeGUID, entityTypeName, this.getExternalIdentifierProperties(volumeInfo,
-                                                                                                                volumeInfo.getSchema_name()));
-        context.confirmSynchronization(egeriaVolumeGUID, entityTypeName, volumeInfo.getName());
+        context.confirmSynchronization(egeriaVolumeGUID, entityTypeName, volumeInfo.getVolume_id());
     }
 
 
@@ -341,16 +346,29 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
      * Create an equivalent element in UC.
      *
      * @param memberElement elements from Egeria
+     * @throws InvalidParameterException parameter error
+     * @throws PropertyServerException repository error or problem communicating with UC
+     * @throws UserNotAuthorizedException authorization error
      */
     private void createElementInThirdParty(String        schemaName,
-                                           MemberElement memberElement) throws PropertyServerException
+                                           MemberElement memberElement) throws PropertyServerException,
+                                                                               InvalidParameterException,
+                                                                               UserNotAuthorizedException
     {
-        ucConnector.createVolume(super.getUCNameFromMember(memberElement),
-                                 catalogName,
-                                 schemaName,
-                                 super.getUCCommentFomMember(memberElement),
-                                 this.getUCVolumeTypeFromMember(memberElement),
-                                 super.getUCStorageLocationFromMember(memberElement));
+        VolumeInfo volumeInfo = ucConnector.createVolume(super.getUCNameFromMember(memberElement),
+                                                         catalogName,
+                                                         schemaName,
+                                                         super.getUCCommentFomMember(memberElement),
+                                                         this.getUCVolumeTypeFromMember(memberElement),
+                                                         super.getUCStorageLocationFromMember(memberElement));
+
+        context.addExternalIdentifier(memberElement.getElement().getElementGUID(),
+                                      deployedImplementationType.getAssociatedTypeName(),
+                                      this.getExternalIdentifierProperties(volumeInfo,
+                                                                           volumeInfo.getSchema_name(),
+                                                                           UnityCatalogPlaceholderProperty.VOLUME_NAME.getName(),
+                                                                           volumeInfo.getVolume_id(),
+                                                                           PermittedSynchronization.FROM_THIRD_PARTY));
     }
 
 
@@ -392,20 +410,33 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
     private void updateElementInThirdParty(VolumeInfo    volumeInfo,
                                            MemberElement memberElement) throws PropertyServerException
     {
-        this.deleteElementInThirdParty(volumeInfo);
-        this.createElementInThirdParty(volumeInfo.getSchema_name(), memberElement);
+        final String methodName = "updateElementInThirdParty";
+
+        auditLog.logMessage(methodName,
+                            UCAuditCode.VOLUME_UPDATE.getMessageDefinition(connectorName,
+                                                                           memberElement.getElement().getElementGUID(),
+                                                                           volumeInfo.getFull_name(),
+                                                                           ucServerEndpoint));
     }
 
 
     /**
+     * Delete the volume from Unity Catalog.
      *
-     * @param info info object describing the element to delete.
+     * @param volumeInfo info object describing the element to delete.
      *
      * @throws PropertyServerException problem connecting to UC
      */
-    private void deleteElementInThirdParty(VolumeInfo  info) throws PropertyServerException
+    private void deleteElementInThirdParty(VolumeInfo  volumeInfo) throws PropertyServerException
     {
-        ucConnector.deleteVolume(info.getFull_name());
+        final String methodName = "deleteElementInThirdParty";
+
+        auditLog.logMessage(methodName,
+                            UCAuditCode.UC_ELEMENT_DELETE.getMessageDefinition(connectorName,
+                                                                               volumeInfo.getFull_name(),
+                                                                               ucServerEndpoint));
+
+        ucConnector.deleteVolume(volumeInfo.getFull_name());
     }
 
 
@@ -422,7 +453,7 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
         placeholderProperties.put(PlaceholderProperty.SERVER_NETWORK_ADDRESS.getName(), ucServerEndpoint);
         placeholderProperties.put(UnityCatalogPlaceholderProperty.CATALOG_NAME.getName(), info.getCatalog_name());
         placeholderProperties.put(UnityCatalogPlaceholderProperty.SCHEMA_NAME.getName(), info.getSchema_name());
-        placeholderProperties.put(UnityCatalogPlaceholderProperty.VOLUME_NAME.getName(), info.getVolume_id());
+        placeholderProperties.put(UnityCatalogPlaceholderProperty.VOLUME_NAME.getName(), info.getName());
         placeholderProperties.put(PlaceholderProperty.DESCRIPTION.getName(), info.getComment());
         placeholderProperties.put(PlaceholderProperty.VERSION_IDENTIFIER.getName(), null);
         placeholderProperties.put(UnityCatalogPlaceholderProperty.STORAGE_LOCATION.getName(), info.getStorage_location());
@@ -463,6 +494,10 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
         elementProperties = propertyHelper.addStringMapProperty(elementProperties,
                                                                 OpenMetadataProperty.ADDITIONAL_PROPERTIES.name,
                                                                 info.getProperties());
+
+        elementProperties = propertyHelper.addStringProperty(elementProperties,
+                                                             OpenMetadataProperty.DEPLOYED_IMPLEMENTATION_TYPE.name,
+                                                             DeployedImplementationType.OSS_UC_VOLUME.getDeployedImplementationType());
 
         return elementProperties;
     }
