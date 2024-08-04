@@ -9,7 +9,7 @@ import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementStatus;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.ElementStatus;
 import org.odpi.openmetadata.frameworks.governanceaction.properties.OpenMetadataElement;
 import org.odpi.openmetadata.frameworks.governanceaction.properties.OpenMetadataRelationship;
 import org.odpi.openmetadata.frameworks.governanceaction.properties.RelatedMetadataElement;
@@ -17,12 +17,13 @@ import org.odpi.openmetadata.frameworks.governanceaction.properties.RelatedMetad
 import org.odpi.openmetadata.frameworks.governanceaction.search.ElementProperties;
 import org.odpi.openmetadata.frameworks.governanceaction.search.PropertyHelper;
 import org.odpi.openmetadata.frameworks.governanceaction.search.SequencingOrder;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.CommentType;
 import org.odpi.openmetadata.frameworks.openmetadata.enums.StarRating;
+import org.odpi.openmetadata.frameworks.openmetadata.properties.feedback.*;
 import org.odpi.openmetadata.frameworks.openmetadata.types.OpenMetadataProperty;
 import org.odpi.openmetadata.frameworks.openmetadata.types.OpenMetadataType;
 import org.odpi.openmetadata.viewservices.feedbackmanager.converters.*;
 import org.odpi.openmetadata.viewservices.feedbackmanager.metadataelements.*;
-import org.odpi.openmetadata.viewservices.feedbackmanager.properties.*;
 
 import java.util.*;
 
@@ -39,6 +40,8 @@ public class CollaborationManagerHandler
     private final PropertyHelper propertyHelper = new PropertyHelper();
 
     private final CommentConverter<CommentElement>         commentConverter;
+    private final LikeConverter<LikeElement>               likeConverter;
+    private final RatingConverter<RatingElement>           ratingConverter;
     private final InformalTagConverter<InformalTagElement> tagConverter;
     private final NoteLogConverter<NoteLogElement>         noteLogConverter;
     private final NoteConverter<NoteElement>               noteConverter;
@@ -68,6 +71,8 @@ public class CollaborationManagerHandler
         String serviceName = ViewServiceDescription.FEEDBACK_MANAGER.getViewServiceFullName();
 
         this.commentConverter = new CommentConverter<>(propertyHelper, serviceName, localServerName);
+        this.likeConverter    = new LikeConverter<>(propertyHelper, serviceName, localServerName);
+        this.ratingConverter  = new RatingConverter<>(propertyHelper, serviceName, localServerName);
         this.tagConverter     = new InformalTagConverter<>(propertyHelper, serviceName, localServerName);
         this.noteLogConverter = new NoteLogConverter<>(propertyHelper, serviceName, localServerName);
         this.noteConverter    = new NoteConverter<>(propertyHelper, serviceName, localServerName);
@@ -290,6 +295,75 @@ public class CollaborationManagerHandler
     }
 
 
+
+    /**
+     * Return the ratings attached to an element.
+     *
+     * @param userId       userId of user making request.
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param effectiveTime effective time
+     * @return list of ratings
+     * @throws InvalidParameterException one of the parameters is null or invalid.
+     * @throws PropertyServerException there is a problem updating the element properties in the property server.
+     * @throws UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    public List<RatingElement>  getAttachedRatings(String  userId,
+                                                   String  elementGUID,
+                                                   int     startFrom,
+                                                   int     pageSize,
+                                                   Date    effectiveTime) throws InvalidParameterException,
+                                                                                 PropertyServerException,
+                                                                                 UserNotAuthorizedException
+    {
+        final String methodName = "getAttachedRatings";
+
+        List<RelatedMetadataElement> relatedMetadataElements = client.getRelatedMetadataElements(userId,
+                                                                                                 elementGUID,
+                                                                                                 1,
+                                                                                                 OpenMetadataType.ATTACHED_RATING_RELATIONSHIP.typeName,
+                                                                                                 false,
+                                                                                                 false,
+                                                                                                 effectiveTime,
+                                                                                                 startFrom,
+                                                                                                 pageSize);
+        return this.getRatingsFromRelatedMetadataElement(relatedMetadataElements, methodName);
+    }
+
+
+    /**
+     * Convert the GAF beans into feedback beans.
+     *
+     * @param relatedMetadataElements elements retrieved from the repository
+     * @param methodName calling method
+     * @return feedback beans
+     * @throws PropertyServerException error formatting bean
+     */
+    private List<RatingElement> getRatingsFromRelatedMetadataElement(List<RelatedMetadataElement> relatedMetadataElements,
+                                                                     String                       methodName) throws PropertyServerException
+    {
+        if (relatedMetadataElements != null)
+        {
+            List<RatingElement> results = new ArrayList<>();
+
+            for (RelatedMetadataElement relatedMetadataElement : relatedMetadataElements)
+            {
+                if (relatedMetadataElement != null)
+                {
+                    results.add(ratingConverter.getNewBean(RatingElement.class,
+                                                           relatedMetadataElement.getElement(),
+                                                           methodName));
+                }
+            }
+
+            return results;
+        }
+
+        return null;
+    }
+
+
     /**
      * Adds a "Like" to the element.
      *
@@ -352,6 +426,75 @@ public class CollaborationManagerHandler
 
 
     /**
+     * Return the likes attached to an element.
+     *
+     * @param userId       userId of user making request.
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param effectiveTime effective time
+     * @return list of likes
+     * @throws InvalidParameterException one of the parameters is null or invalid.
+     * @throws PropertyServerException there is a problem updating the element properties in the property server.
+     * @throws UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    public List<LikeElement>  getAttachedLikes(String  userId,
+                                               String  elementGUID,
+                                               int     startFrom,
+                                               int     pageSize,
+                                               Date    effectiveTime) throws InvalidParameterException,
+                                                                             PropertyServerException,
+                                                                             UserNotAuthorizedException
+    {
+        final String methodName = "getAttachedLikes";
+
+        List<RelatedMetadataElement> relatedMetadataElements = client.getRelatedMetadataElements(userId,
+                                                                                                 elementGUID,
+                                                                                                 1,
+                                                                                                 OpenMetadataType.ATTACHED_LIKE_RELATIONSHIP.typeName,
+                                                                                                 false,
+                                                                                                 false,
+                                                                                                 effectiveTime,
+                                                                                                 startFrom,
+                                                                                                 pageSize);
+        return this.getLikesFromRelatedMetadataElement(relatedMetadataElements, methodName);
+    }
+
+
+    /**
+     * Convert the GAF beans into feedback beans.
+     *
+     * @param relatedMetadataElements elements retrieved from the repository
+     * @param methodName calling method
+     * @return feedback beans
+     * @throws PropertyServerException error formatting bean
+     */
+    private List<LikeElement> getLikesFromRelatedMetadataElement(List<RelatedMetadataElement> relatedMetadataElements,
+                                                                 String                       methodName) throws PropertyServerException
+    {
+        if (relatedMetadataElements != null)
+        {
+            List<LikeElement> results = new ArrayList<>();
+
+            for (RelatedMetadataElement relatedMetadataElement : relatedMetadataElements)
+            {
+                if (relatedMetadataElement != null)
+                {
+                    results.add(likeConverter.getNewBean(LikeElement.class,
+                                                         relatedMetadataElement.getElement(),
+                                                         methodName));
+                }
+            }
+
+            return results;
+        }
+
+        return null;
+    }
+
+
+
+    /**
      * Adds a comment to the element.
      *
      * @param userId        userId of user making request.
@@ -368,9 +511,9 @@ public class CollaborationManagerHandler
     public String addCommentToElement(String                       userId,
                                       String                       elementGUID,
                                       boolean                      isPublic,
-                                      CommentProperties            properties) throws InvalidParameterException,
-                                                                                      PropertyServerException,
-                                                                                      UserNotAuthorizedException
+                                      CommentProperties properties) throws InvalidParameterException,
+                                                                           PropertyServerException,
+                                                                           UserNotAuthorizedException
     {
         final String methodName = "addCommentToElement";
 
@@ -431,7 +574,7 @@ public class CollaborationManagerHandler
         {
             elementProperties = propertyHelper.addEnumProperty(elementProperties,
                                                                OpenMetadataProperty.COMMENT_TYPE.name,
-                                                               StarRating.getOpenTypeName(),
+                                                               CommentType.getOpenTypeName(),
                                                                properties.getCommentType().getName());
         }
 
@@ -1302,6 +1445,75 @@ public class CollaborationManagerHandler
     }
 
 
+
+    /**
+     * Return the informal tags attached to an element.
+     *
+     * @param userId       userId of user making request.
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param effectiveTime effective time
+     * @return list of tags
+     * @throws InvalidParameterException one of the parameters is null or invalid.
+     * @throws PropertyServerException there is a problem updating the element properties in the property server.
+     * @throws UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    public List<InformalTagElement>  getAttachedTags(String  userId,
+                                                     String  elementGUID,
+                                                     int     startFrom,
+                                                     int     pageSize,
+                                                     Date    effectiveTime) throws InvalidParameterException,
+                                                                                   PropertyServerException,
+                                                                                   UserNotAuthorizedException
+    {
+        final String methodName = "getAttachedTags";
+
+        List<RelatedMetadataElement> relatedMetadataElements = client.getRelatedMetadataElements(userId,
+                                                                                                 elementGUID,
+                                                                                                 1,
+                                                                                                 OpenMetadataType.ATTACHED_TAG_RELATIONSHIP.typeName,
+                                                                                                 false,
+                                                                                                 false,
+                                                                                                 effectiveTime,
+                                                                                                 startFrom,
+                                                                                                 pageSize);
+        return this.getTagsFromRelatedMetadataElement(relatedMetadataElements, methodName);
+    }
+
+
+    /**
+     * Convert the GAF beans into feedback beans.
+     *
+     * @param relatedMetadataElements elements retrieved from the repository
+     * @param methodName calling method
+     * @return feedback beans
+     * @throws PropertyServerException error formatting bean
+     */
+    private List<InformalTagElement> getTagsFromRelatedMetadataElement(List<RelatedMetadataElement> relatedMetadataElements,
+                                                                       String                       methodName) throws PropertyServerException
+    {
+        if (relatedMetadataElements != null)
+        {
+            List<InformalTagElement> results = new ArrayList<>();
+
+            for (RelatedMetadataElement relatedMetadataElement : relatedMetadataElements)
+            {
+                if (relatedMetadataElement != null)
+                {
+                    results.add(tagConverter.getNewBean(InformalTagElement.class,
+                                                        relatedMetadataElement.getElement(),
+                                                        methodName));
+                }
+            }
+
+            return results;
+        }
+
+        return null;
+    }
+
+
     /* =====================================================================================================================
      * A note log maintains an ordered list of notes.  It can be used to support release note, blogs and similar
      * broadcast information.  Note logs are typically maintained by the owners/stewards of an element.
@@ -1698,9 +1910,9 @@ public class CollaborationManagerHandler
      */
     public String createNote(String          userId,
                              String          noteLogGUID,
-                             NoteProperties  noteProperties) throws InvalidParameterException,
-                                                                    UserNotAuthorizedException,
-                                                                    PropertyServerException
+                             NoteProperties noteProperties) throws InvalidParameterException,
+                                                                   UserNotAuthorizedException,
+                                                                   PropertyServerException
     {
         final String methodName = "createNote";
         final String guidParameterName = "noteLogGUID";

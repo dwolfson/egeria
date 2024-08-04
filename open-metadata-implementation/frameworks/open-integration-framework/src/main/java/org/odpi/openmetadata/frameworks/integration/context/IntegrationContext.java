@@ -8,9 +8,9 @@ import org.odpi.openmetadata.frameworks.connectors.ffdc.ConnectorCheckedExceptio
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementClassification;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementHeader;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementType;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementHeader;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.odpi.openmetadata.frameworks.governanceaction.OpenMetadataStore;
 import org.odpi.openmetadata.frameworks.governanceaction.client.GovernanceConfiguration;
 import org.odpi.openmetadata.frameworks.governanceaction.client.OpenMetadataClient;
@@ -161,13 +161,13 @@ public class IntegrationContext
     {
         if (openMetadataStoreClient != null)
         {
-            OpenMetadataAccess      openMetadataAccess      = new OpenMetadataAccess(openMetadataStore,
-                                                                                     userId,
-                                                                                     externalSourceGUID,
-                                                                                     externalSourceName,
-                                                                                     originatorGUID,
-                                                                                     integrationReportWriter);
-            MultiLanguageManagement multiLanguageManagement = new MultiLanguageManagement(openMetadataStore, userId);
+            OpenMetadataAccess openMetadataAccess = new OpenMetadataAccess(openMetadataStore,
+                                                                           userId,
+                                                                           externalSourceGUID,
+                                                                           externalSourceName,
+                                                                           originatorGUID,
+                                                                           integrationReportWriter);
+            MultiLanguageManagement    multiLanguageManagement    = new MultiLanguageManagement(openMetadataStore, userId);
             StewardshipAction          stewardshipAction          = new StewardshipAction(openMetadataStore, userId, originatorGUID);
             ValidMetadataValuesContext validMetadataValuesContext = new ValidMetadataValuesContext(openMetadataStore, userId);
 
@@ -188,6 +188,32 @@ public class IntegrationContext
         return fileClassifier;
     }
 
+
+
+    /**
+     * Determine whether a particular element should be catalogued.  The include list takes precedent over
+     * the exclude list.
+     *
+     * @param elementName name of the element
+     * @param excludedNames list of names to exclude (null means ignore value)
+     * @param includedNames list of names to include (null means ignore value)
+     * @return flag indicating whether to work with the database
+     */
+    public boolean elementShouldBeCatalogued(String       elementName,
+                                             List<String> excludedNames,
+                                             List<String> includedNames)
+    {
+        if (includedNames != null)
+        {
+            return includedNames.contains(elementName);
+        }
+        else if (excludedNames != null)
+        {
+            return ! excludedNames.contains(elementName);
+        }
+
+        return true;
+    }
 
 
     /**

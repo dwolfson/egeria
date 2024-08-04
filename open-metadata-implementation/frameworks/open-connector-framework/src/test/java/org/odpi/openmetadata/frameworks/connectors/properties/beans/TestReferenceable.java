@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -18,9 +20,9 @@ import static org.testng.Assert.assertTrue;
  */
 public class TestReferenceable
 {
-    private ElementType                 type                 = new ElementType();
-    private List<ElementClassification> classifications      = new ArrayList<>();
-    private List<Meaning>               meanings             = new ArrayList<>();
+    private ElementType                 type            = new ElementType();
+    private List<ElementClassification> classifications = new ArrayList<>();
+    private List<Meaning>               meanings        = new ArrayList<>();
     private Map<String, String>         additionalProperties = new HashMap<>();
 
 
@@ -62,10 +64,10 @@ public class TestReferenceable
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
     }
 
 
@@ -132,7 +134,7 @@ public class TestReferenceable
         testObject = new Asset();
         testObject.setAdditionalProperties(propertyMap);
 
-        assertTrue(testObject.getAdditionalProperties() == null);
+        assertTrue(testObject.getAdditionalProperties() != null);
 
         propertyMap.put("propertyName", "propertyValue");
         testObject = new Asset();
@@ -220,7 +222,7 @@ public class TestReferenceable
         /*
          * Through superclass
          */
-        PropertyBase  propertyBase = getTestObject();
+        ElementBase  propertyBase = getTestObject();
 
         try
         {
@@ -233,7 +235,7 @@ public class TestReferenceable
 
         try
         {
-            validateResultObject((Referenceable) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((Referenceable) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

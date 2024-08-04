@@ -9,6 +9,7 @@ import com.fasterxml.jackson.annotation.JsonInclude;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.ActionTargetType;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.GuardType;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.RequestParameterType;
+import org.odpi.openmetadata.frameworks.openmetadata.properties.ReferenceableProperties;
 
 import java.util.List;
 import java.util.Map;
@@ -305,16 +306,6 @@ public class GovernanceActionTypeProperties extends ReferenceableProperties
      */
     public Map<String, String> getFixedRequestParameters()
     {
-        if (fixedRequestParameters == null)
-        {
-            return null;
-        }
-
-        if (fixedRequestParameters.isEmpty())
-        {
-            return null;
-        }
-
         return fixedRequestParameters;
     }
 

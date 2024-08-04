@@ -4,6 +4,7 @@ package org.odpi.openmetadata.frameworks.governanceaction.properties;
 
 import com.fasterxml.jackson.annotation.*;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.Connection;
+import org.odpi.openmetadata.frameworks.openmetadata.properties.ReferenceableProperties;
 
 import java.util.*;
 
@@ -195,18 +196,7 @@ public class GovernanceServiceProperties extends ReferenceableProperties
      */
     public List<String> getZoneMembership()
     {
-        if (zoneMembership == null)
-        {
-            return null;
-        }
-        else if (zoneMembership.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new ArrayList<>(zoneMembership);
-        }
+        return zoneMembership;
     }
 
 
@@ -272,18 +262,7 @@ public class GovernanceServiceProperties extends ReferenceableProperties
      */
     public Map<String, String> getOtherOriginValues()
     {
-        if (otherOriginValues == null)
-        {
-            return null;
-        }
-        else if (otherOriginValues.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new HashMap<>(otherOriginValues);
-        }
+        return otherOriginValues;
     }
 
 

@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -64,10 +66,10 @@ public class TestNoteLog2
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getDisplayName().equals("TestDisplayName"));
         assertTrue(resultObject.getDescription().equals("TestDescription"));
@@ -221,7 +223,7 @@ public class TestNoteLog2
         /*
          * Through superclass
          */
-        PropertyBase  propertyBase = getTestObject();
+        ElementBase  propertyBase = getTestObject();
 
         try
         {
@@ -234,7 +236,7 @@ public class TestNoteLog2
 
         try
         {
-            validateResultObject((NoteLogHeader) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((NoteLogHeader) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

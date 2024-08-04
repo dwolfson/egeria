@@ -13,7 +13,7 @@ import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementStatus;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.ElementStatus;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.PlaceholderProperty;
 import org.odpi.openmetadata.frameworks.governanceaction.search.ElementProperties;
 import org.odpi.openmetadata.frameworks.integration.iterator.IntegrationIterator;
@@ -54,6 +54,8 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
      * @param ucServerEndpoint the server endpoint used to constructing the qualified names
      * @param templates templates supplied through the catalog target
      * @param configurationProperties configuration properties supplied through the catalog target
+     * @param excludeNames list of catalogs to ignore (and include all others)
+     * @param includeNames list of catalogs to include (and ignore all others) - overrides excludeCatalogs
      * @param auditLog logging destination
      */
     public OSSUnityCatalogInsideCatalogSyncVolumes(String                           connectorName,
@@ -66,6 +68,8 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
                                                    String                           ucServerEndpoint,
                                                    Map<String, String>              templates,
                                                    Map<String, Object>              configurationProperties,
+                                                   List<String>                     excludeNames,
+                                                   List<String>                     includeNames,
                                                    AuditLog                         auditLog)
     {
         super(connectorName,
@@ -79,6 +83,8 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
               DeployedImplementationType.OSS_UC_VOLUME,
               templates,
               configurationProperties,
+              excludeNames,
+              includeNames,
               auditLog);
 
         if (templates != null)
@@ -119,38 +125,52 @@ public class OSSUnityCatalogInsideCatalogSyncVolumes extends OSSUnityCatalogInsi
 
             if (nextElement != null)
             {
-                VolumeInfo volumeInfo = null;
+                /*
+                 * Check that this is a Volume and not part of a table.
+                 */
+                String deployedImplementationType = propertyHelper.getStringProperty(catalogTargetName,
+                                                                                     OpenMetadataProperty.DEPLOYED_IMPLEMENTATION_TYPE.name,
+                                                                                     nextElement.getElement().getElementProperties(),
+                                                                                     methodName);
 
-                String volumeName = propertyHelper.getStringProperty(catalogTargetName,
-                                                                     OpenMetadataProperty.NAME.name,
-                                                                     nextElement.getElement().getElementProperties(),
-                                                                     methodName);
+                if (DeployedImplementationType.OSS_UC_VOLUME.getDeployedImplementationType().equals(deployedImplementationType))
+                {
+                    VolumeInfo volumeInfo = null;
 
-                try
-                {
-                    volumeInfo = ucConnector.getVolume(volumeName);
-                }
-                catch (Exception missing)
-                {
-                    // this is not necessarily an error
-                }
+                    String volumeName = propertyHelper.getStringProperty(catalogTargetName,
+                                                                         OpenMetadataProperty.NAME.name,
+                                                                         nextElement.getElement().getElementProperties(),
+                                                                         methodName);
 
-                MemberAction memberAction = MemberAction.NO_ACTION;
-                if (volumeInfo == null)
-                {
-                    memberAction = nextElement.getMemberAction(null, null);
-                }
-                else if (noMismatchInExternalIdentifier(volumeInfo.getVolume_id(), nextElement))
-                {
-                    memberAction = nextElement.getMemberAction(this.getDateFromLong(volumeInfo.getCreated_at()),
-                                                               this.getDateFromLong(volumeInfo.getUpdated_at()));
-                }
+                    if (context.elementShouldBeCatalogued(volumeName, excludeNames, includeNames))
+                    {
+                        try
+                        {
+                            volumeInfo = ucConnector.getVolume(volumeName);
+                        }
+                        catch (Exception missing)
+                        {
+                            // this is not necessarily an error
+                        }
 
-                this.takeAction(context.getAnchorGUID(nextElement.getElement()),
-                                super.getUCSchemaFomMember(nextElement),
-                                memberAction,
-                                nextElement,
-                                volumeInfo);
+                        MemberAction memberAction = MemberAction.NO_ACTION;
+                        if (volumeInfo == null)
+                        {
+                            memberAction = nextElement.getMemberAction(null, null);
+                        }
+                        else if (noMismatchInExternalIdentifier(volumeInfo.getVolume_id(), nextElement))
+                        {
+                            memberAction = nextElement.getMemberAction(this.getDateFromLong(volumeInfo.getCreated_at()),
+                                                                       this.getDateFromLong(volumeInfo.getUpdated_at()));
+                        }
+
+                        this.takeAction(context.getAnchorGUID(nextElement.getElement()),
+                                        super.getUCSchemaFomMember(nextElement),
+                                        memberAction,
+                                        nextElement,
+                                        volumeInfo);
+                    }
+                }
             }
         }
 

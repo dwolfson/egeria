@@ -6,6 +6,7 @@ import org.odpi.openmetadata.adapters.connectors.integration.jdbc.controls.JDBCC
 import org.odpi.openmetadata.adapters.connectors.integration.jdbc.controls.JDBCDatabaseCatalogTarget;
 import org.odpi.openmetadata.frameworks.auditlog.AuditLogReportingComponent;
 import org.odpi.openmetadata.frameworks.auditlog.ComponentDevelopmentStatus;
+import org.odpi.openmetadata.frameworks.connectors.controls.SupportedTechnologyType;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorType;
 import org.odpi.openmetadata.frameworks.openmetadata.refdata.DeployedImplementationType;
 import org.odpi.openmetadata.frameworks.integration.connectors.IntegrationConnectorProvider;
@@ -87,7 +88,7 @@ public class JDBCIntegrationConnectorProvider extends IntegrationConnectorProvid
         AuditLogReportingComponent componentDescription = new AuditLogReportingComponent();
 
         componentDescription.setComponentId(connectorComponentId);
-        componentDescription.setComponentDevelopmentStatus(ComponentDevelopmentStatus.TECHNICAL_PREVIEW);
+        componentDescription.setComponentDevelopmentStatus(ComponentDevelopmentStatus.STABLE);
         componentDescription.setComponentName(connectorDisplayName);
         componentDescription.setComponentDescription(connectorDescription);
         componentDescription.setComponentWikiURL(connectorWikiPage);
@@ -96,5 +97,7 @@ public class JDBCIntegrationConnectorProvider extends IntegrationConnectorProvid
 
         super.supportedConfigurationProperties = JDBCConfigurationProperty.getConfigurationPropertyTypes();
         super.catalogTargets = JDBCDatabaseCatalogTarget.getCatalogTargetTypes();
+
+        super.supportedTechnologyTypes = SupportedTechnologyType.getSupportedTechnologyTypes(new DeployedImplementationType[]{DeployedImplementationType.JDBC_RELATIONAL_DATABASE, DeployedImplementationType.JDBC_RELATIONAL_DATABASE_SCHEMA, DeployedImplementationType.JDBC_RELATIONAL_DATABASE_TABLE});
     }
 }

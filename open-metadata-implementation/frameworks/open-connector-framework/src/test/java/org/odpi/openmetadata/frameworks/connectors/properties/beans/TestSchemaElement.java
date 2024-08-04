@@ -2,6 +2,8 @@
 /* Copyright Contributors to the ODPi Egeria project. */
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -111,7 +113,7 @@ public class TestSchemaElement
         testObject = new MockSchemaElement();
         testObject.setAdditionalProperties(propertyMap);
 
-        assertTrue(testObject.getAdditionalProperties() == null);
+        assertTrue(testObject.getAdditionalProperties() != null);
 
         propertyMap.put("propertyName", "propertyValue");
         testObject = new MockSchemaElement();

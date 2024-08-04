@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -18,9 +20,9 @@ import static org.testng.Assert.assertTrue;
  */
 public class TestConnection
 {
-    private ElementType                 type                    = new ElementType();
-    private List<ElementClassification> classifications         = new ArrayList<>();
-    private Map<String, String>         additionalProperties    = new HashMap<>();
+    private ElementType                 type                 = new ElementType();
+    private List<ElementClassification> classifications      = new ArrayList<>();
+    private Map<String, String>         additionalProperties = new HashMap<>();
     private Map<String, Object>         configurationProperties = new HashMap<>();
     private Map<String, String>         securedProperties       = new HashMap<>();
     private ConnectorType               connectorType           = new ConnectorType();
@@ -72,17 +74,17 @@ public class TestConnection
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getDisplayName().equals("TestDisplayName"));
         assertTrue(resultObject.getDescription().equals("TestDescription"));
         assertTrue(resultObject.getConnectorType().equals(connectorType));
         assertTrue(resultObject.getEndpoint().equals(endpoint));
-        assertTrue(resultObject.getConfigurationProperties() == null);
-        assertTrue(resultObject.getSecuredProperties() == null);
+        assertTrue(resultObject.getConfigurationProperties() != null);
+        assertTrue(resultObject.getSecuredProperties() != null);
     }
 
 
@@ -154,7 +156,7 @@ public class TestConnection
         testObject = new Connection();
         testObject.setConfigurationProperties(propertyMap);
 
-        assertTrue(testObject.getConfigurationProperties() == null);
+        assertTrue(testObject.getConfigurationProperties() != null);
 
         propertyMap.put("propertyName", "propertyValue");
         testObject = new Connection();
@@ -188,7 +190,7 @@ public class TestConnection
         testObject = new Connection();
         testObject.setSecuredProperties(propertyMap);
 
-        assertTrue(testObject.getSecuredProperties() == null);
+        assertTrue(testObject.getSecuredProperties() != null);
 
         propertyMap.put("propertyName", "propertyValue");
         testObject = new Connection();
@@ -318,7 +320,7 @@ public class TestConnection
         /*
          * Through superclass
          */
-        PropertyBase propertyBase = getTestObject();
+        ElementBase propertyBase = getTestObject();
 
         try
         {
@@ -331,7 +333,7 @@ public class TestConnection
 
         try
         {
-            validateResultObject((Connection) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((Connection) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

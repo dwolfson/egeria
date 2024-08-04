@@ -3,7 +3,7 @@
 package org.odpi.openmetadata.frameworkservices.ocf.metadatamanagement.properties;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -149,7 +149,7 @@ public class GlossaryTermTest
         testObject = new GlossaryTerm();
         testObject.setAdditionalProperties(propertyMap);
 
-        assertTrue(testObject.getAdditionalProperties() == null);
+        assertTrue(testObject.getAdditionalProperties() != null);
 
         propertyMap.put("propertyName", "propertyValue");
         testObject = new GlossaryTerm();
@@ -181,7 +181,7 @@ public class GlossaryTermTest
         testObject = new GlossaryTerm();
         testObject.setClassifications(emptyClassifications);
 
-        assertTrue(testObject.getClassifications() == null);
+        assertTrue(testObject.getClassifications() != null);
 
         testObject = new GlossaryTerm();
         testObject.setClassifications(classifications);

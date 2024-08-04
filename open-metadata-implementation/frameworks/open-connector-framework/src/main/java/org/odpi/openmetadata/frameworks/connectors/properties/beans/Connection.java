@@ -3,8 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.annotation.*;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.Objects;
 
@@ -350,18 +350,7 @@ public class Connection extends Referenceable
      */
     public Map<String, Object> getConfigurationProperties()
     {
-        if (configurationProperties == null)
-        {
-            return null;
-        }
-        else if (configurationProperties.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new HashMap<>(configurationProperties);
-        }
+        return configurationProperties;
     }
 
 
@@ -383,18 +372,7 @@ public class Connection extends Referenceable
      */
     public Map<String, String> getSecuredProperties()
     {
-        if (securedProperties == null)
-        {
-            return null;
-        }
-        else if (securedProperties.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new HashMap<>(securedProperties);
-        }
+        return securedProperties;
     }
 
 

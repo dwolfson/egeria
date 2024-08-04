@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties;
 
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.*;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -119,7 +121,7 @@ public class TestEndpointProperties
         assertTrue(resultObject.getClassifications() == null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getDisplayName().equals("TestDisplayName"));
         assertTrue(resultObject.getDescription().equals("TestDescription"));

@@ -11,8 +11,9 @@ import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementStatus;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.ElementStatus;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.PlaceholderProperty;
+import org.odpi.openmetadata.frameworks.governanceaction.properties.CatalogTarget;
 import org.odpi.openmetadata.frameworks.governanceaction.search.ElementProperties;
 import org.odpi.openmetadata.frameworks.integration.iterator.*;
 import org.odpi.openmetadata.frameworks.governanceaction.properties.CatalogTargetProperties;
@@ -47,11 +48,14 @@ public class OSSUnityCatalogServerSyncCatalog extends OSSUnityCatalogInsideCatal
      * @param context context for the connector
      * @param catalogTargetName the catalog target name
      * @param ucServerGUID unique identifier of the UC Server
+     * @param friendshipConnectorGUID optional unique name of inside catalog integration connector
      * @param targetPermittedSynchronization the policy that controls the direction of metadata exchange
      * @param ucConnector connector for accessing UC
      * @param ucServerEndpoint the server endpoint used to constructing the qualified names
      * @param templates templates supplied through the catalog target
      * @param configurationProperties configuration properties supplied through the catalog target
+     * @param excludeCatalogs list of catalogs to ignore (and include all others)
+     * @param includeCatalogs list of catalogs to include (and ignore all others) - overrides excludeCatalogs
      * @param auditLog logging destination
      */
     public OSSUnityCatalogServerSyncCatalog(String                           connectorName,
@@ -64,6 +68,8 @@ public class OSSUnityCatalogServerSyncCatalog extends OSSUnityCatalogInsideCatal
                                             String                           ucServerEndpoint,
                                             Map<String, String>              templates,
                                             Map<String, Object>              configurationProperties,
+                                            List<String>                     excludeCatalogs,
+                                            List<String>                     includeCatalogs,
                                             AuditLog                         auditLog)
     {
         super(connectorName,
@@ -77,6 +83,8 @@ public class OSSUnityCatalogServerSyncCatalog extends OSSUnityCatalogInsideCatal
               DeployedImplementationType.OSS_UC_CATALOG,
               templates,
               configurationProperties,
+              excludeCatalogs,
+              includeCatalogs,
               auditLog);
 
         this.ucServerGUID = ucServerGUID;
@@ -98,8 +106,8 @@ public class OSSUnityCatalogServerSyncCatalog extends OSSUnityCatalogInsideCatal
      * @throws UserNotAuthorizedException security error
      */
     protected IntegrationIterator refreshEgeria() throws InvalidParameterException,
-                                                                PropertyServerException,
-                                                                UserNotAuthorizedException
+                                                         PropertyServerException,
+                                                         UserNotAuthorizedException
     {
         final String methodName = "refreshEgeria";
 
@@ -125,33 +133,76 @@ public class OSSUnityCatalogServerSyncCatalog extends OSSUnityCatalogInsideCatal
                     (nextElement.getElement() != null) &&
                     (propertyHelper.isTypeOf(nextElement.getElement(), OpenMetadataType.CATALOG.typeName)))
             {
-                CatalogInfo info = null;
+                /*
+                 * Check that this is a UC Table.
+                 */
+                String deployedImplementationType = propertyHelper.getStringProperty(catalogTargetName,
+                                                                                     OpenMetadataProperty.DEPLOYED_IMPLEMENTATION_TYPE.name,
+                                                                                     nextElement.getElement().getElementProperties(),
+                                                                                     methodName);
 
-                String name = propertyHelper.getStringProperty(catalogTargetName,
-                                                               OpenMetadataProperty.NAME.name,
-                                                               nextElement.getElement().getElementProperties(),
-                                                               methodName);
+                if (DeployedImplementationType.OSS_UC_CATALOG.getDeployedImplementationType().equals(deployedImplementationType))
+                {
+                    CatalogInfo info = null;
 
-                try
-                {
-                    info = ucConnector.getCatalog(name);
-                }
-                catch (Exception missing)
-                {
-                    // this is not necessarily an error
-                }
+                    String name = propertyHelper.getStringProperty(catalogTargetName,
+                                                                   OpenMetadataProperty.NAME.name,
+                                                                   nextElement.getElement().getElementProperties(),
+                                                                   methodName);
 
-                MemberAction memberAction = MemberAction.NO_ACTION;
-                if (info == null)
-                {
-                    memberAction = nextElement.getMemberAction(null, null);
-                }
-                else if (noMismatchInExternalIdentifier(info.getId(), nextElement))
-                {
-                    memberAction = nextElement.getMemberAction(this.getDateFromLong(info.getCreated_at()), this.getDateFromLong(info.getUpdated_at()));
-                }
+                    if (context.elementShouldBeCatalogued(name, excludeNames, includeNames))
+                    {
+                        try
+                        {
+                            info = ucConnector.getCatalog(name);
+                        }
+                        catch (Exception missing)
+                        {
+                            // this is not necessarily an error
+                        }
 
-                this.takeAction(memberAction, nextElement, info);
+                        MemberAction memberAction = MemberAction.NO_ACTION;
+                        if (info == null)
+                        {
+                            memberAction = nextElement.getMemberAction(null, null);
+                        }
+                        else if (noMismatchInExternalIdentifier(info.getId(), nextElement))
+                        {
+                            memberAction = nextElement.getMemberAction(this.getDateFromLong(info.getCreated_at()), this.getDateFromLong(info.getUpdated_at()));
+                        }
+
+                        this.takeAction(memberAction, nextElement, info);
+                    }
+                    else if (friendshipConnectorGUID != null)
+                    {
+                        /*
+                         * Check that there is no catalog target set up for this catalog since it should not be catalogued.
+                         */
+                        int startingFrom = 0;
+                        List<CatalogTarget> catalogTargets = context.getCatalogTargets(friendshipConnectorGUID,
+                                                                                       startingFrom,
+                                                                                       context.getMaxPageSize());
+                        while (catalogTargets != null)
+                        {
+                            for (CatalogTarget catalogTarget : catalogTargets)
+                            {
+                                if (catalogTarget != null)
+                                {
+                                    if (name.equals(catalogTarget.getCatalogTargetName()))
+                                    {
+                                        context.removeCatalogTarget(catalogTarget.getRelationshipGUID());
+                                    }
+                                }
+                            }
+
+                            startingFrom = startingFrom + context.getMaxPageSize();
+
+                            catalogTargets = context.getCatalogTargets(friendshipConnectorGUID,
+                                                                       startingFrom,
+                                                                       context.getMaxPageSize());
+                        }
+                    }
+                }
             }
         }
 

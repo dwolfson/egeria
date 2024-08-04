@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties;
 
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.*;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -122,13 +124,13 @@ public class TestConnectionProperties
         assertTrue(resultObject.getClassifications() == null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getDisplayName().equals("TestDisplayName"));
         assertTrue(resultObject.getDescription().equals("TestDescription"));
         assertTrue(resultObject.getConnectorType().getConnectorTypeBean().equals(connectorType));
         assertTrue(resultObject.getEndpoint().getEndpointBean().equals(endpoint));
-        assertTrue(resultObject.getSecuredProperties() == null);
+        assertTrue(resultObject.getSecuredProperties() != null);
     }
 
 
@@ -234,7 +236,7 @@ public class TestConnectionProperties
 
         securedProperties = testObject.getSecuredProperties();
 
-        assertTrue(securedProperties == null);
+        assertTrue(securedProperties != null);
     }
 
 

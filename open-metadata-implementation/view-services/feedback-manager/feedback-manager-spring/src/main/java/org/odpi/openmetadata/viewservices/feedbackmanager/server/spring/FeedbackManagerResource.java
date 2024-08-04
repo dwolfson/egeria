@@ -5,8 +5,10 @@ package org.odpi.openmetadata.viewservices.feedbackmanager.server.spring;
 import io.swagger.v3.oas.annotations.ExternalDocumentation;
 import io.swagger.v3.oas.annotations.Operation;
 import io.swagger.v3.oas.annotations.tags.Tag;
-import org.odpi.openmetadata.commonservices.ffdc.rest.*;
-import org.odpi.openmetadata.viewservices.feedbackmanager.properties.*;
+import org.odpi.openmetadata.commonservices.ffdc.rest.FilterRequestBody;
+import org.odpi.openmetadata.commonservices.ffdc.rest.GUIDResponse;
+import org.odpi.openmetadata.commonservices.ffdc.rest.VoidResponse;
+import org.odpi.openmetadata.frameworks.openmetadata.properties.feedback.*;
 import org.odpi.openmetadata.viewservices.feedbackmanager.rest.*;
 import org.odpi.openmetadata.viewservices.feedbackmanager.server.FeedbackManagerRESTServices;
 import org.springframework.web.bind.annotation.*;
@@ -71,7 +73,7 @@ public class FeedbackManagerResource
                                             String                         viewServiceURLMarker,
                                         @RequestParam (required = false, defaultValue = "asset-manager")
                                             String                         accessServiceURLMarker,
-                                        @RequestBody  ReferenceableUpdateRequestBody requestBody)
+                                        @RequestBody ReferenceableUpdateRequestBody requestBody)
     {
         return restAPI.addCommentReply(serverName, elementGUID, commentGUID, isPublic, viewServiceURLMarker, accessServiceURLMarker, requestBody);
     }
@@ -394,7 +396,7 @@ public class FeedbackManagerResource
                                                   String                         viewServiceURLMarker,
                                               @RequestParam (required = false, defaultValue = "asset-manager")
                                                   String                         accessServiceURLMarker,
-                                              @RequestBody  FilterRequestBody requestBody)
+                                              @RequestBody FilterRequestBody requestBody)
     {
         return restAPI.getTagsByName(serverName, startFrom, pageSize, viewServiceURLMarker, accessServiceURLMarker, requestBody);
     }
@@ -633,6 +635,79 @@ public class FeedbackManagerResource
 
 
     /**
+     * Return the ratings attached to an element.
+     *
+     * @param serverName name of the server instances for this request
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param viewServiceURLMarker optional view service URL marker (overrides accessServiceURLMarker)
+     * @param accessServiceURLMarker optional access service URL marker used to identify which back end service to call
+     * @param requestBody optional effective time
+     * @return list of ratings or
+     *  InvalidParameterException one of the parameters is null or invalid.
+     *  PropertyServerException there is a problem updating the element properties in the property server.
+     *  UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    @PostMapping(path = "/elements/{elementGUID}/ratings/retrieve")
+
+    @Operation(summary="getAttachedComments",
+            description="Return the ratings attached to an element.",
+            externalDocs=@ExternalDocumentation(description="Element Feedback",
+                    url="https://egeria-project.org/patterns/metadata-manager/overview/#asset-feedback"))
+
+    public RatingElementsResponse getAttachedRatings(@PathVariable String                        serverName,
+                                                     @PathVariable String                        elementGUID,
+                                                     @RequestParam int                           startFrom,
+                                                     @RequestParam int                           pageSize,
+                                                     @RequestParam (required = false)
+                                                           String                         viewServiceURLMarker,
+                                                     @RequestParam (required = false, defaultValue = "asset-manager")
+                                                           String                         accessServiceURLMarker,
+                                                     @RequestBody(required = false) EffectiveTimeQueryRequestBody requestBody)
+    {
+        return restAPI.getAttachedRatings(serverName, elementGUID, startFrom, pageSize, viewServiceURLMarker, accessServiceURLMarker, requestBody);
+    }
+
+
+
+    /**
+     * Return the likes attached to an element.
+     *
+     * @param serverName name of the server instances for this request
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param viewServiceURLMarker optional view service URL marker (overrides accessServiceURLMarker)
+     * @param accessServiceURLMarker optional access service URL marker used to identify which back end service to call
+     * @param requestBody optional effective time
+     * @return list of likes or
+     *  InvalidParameterException one of the parameters is null or invalid.
+     *  PropertyServerException there is a problem updating the element properties in the property server.
+     *  UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    @PostMapping(path = "/elements/{elementGUID}/likes/retrieve")
+
+    @Operation(summary="getAttachedLikes",
+            description="Return the likes attached to an element.",
+            externalDocs=@ExternalDocumentation(description="Element Feedback",
+                    url="https://egeria-project.org/patterns/metadata-manager/overview/#asset-feedback"))
+
+    public LikeElementsResponse getAttachedLikes(@PathVariable String                        serverName,
+                                                 @PathVariable String                        elementGUID,
+                                                 @RequestParam int                           startFrom,
+                                                 @RequestParam int                           pageSize,
+                                                 @RequestParam (required = false)
+                                                     String                         viewServiceURLMarker,
+                                                 @RequestParam (required = false, defaultValue = "asset-manager")
+                                                       String                         accessServiceURLMarker,
+                                                 @RequestBody(required = false) EffectiveTimeQueryRequestBody requestBody)
+    {
+        return restAPI.getAttachedLikes(serverName, elementGUID, startFrom, pageSize, viewServiceURLMarker, accessServiceURLMarker, requestBody);
+    }
+
+
+    /**
      * Return the comments attached to an element.
      *
      * @param serverName name of the server instances for this request
@@ -659,12 +734,49 @@ public class FeedbackManagerResource
                                                        @RequestParam int                           startFrom,
                                                        @RequestParam int                           pageSize,
                                                        @RequestParam (required = false)
-                                                           String                         viewServiceURLMarker,
+                                                       String                         viewServiceURLMarker,
                                                        @RequestParam (required = false, defaultValue = "asset-manager")
-                                                           String                         accessServiceURLMarker,
+                                                       String                         accessServiceURLMarker,
                                                        @RequestBody(required = false) EffectiveTimeQueryRequestBody requestBody)
     {
         return restAPI.getAttachedComments(serverName, elementGUID, startFrom, pageSize, viewServiceURLMarker, accessServiceURLMarker, requestBody);
+    }
+
+
+
+    /**
+     * Return the informal tags attached to an element.
+     *
+     * @param serverName name of the server instances for this request
+     * @param elementGUID    unique identifier for the element that the comments are connected to (maybe a comment too).
+     * @param startFrom  index of the list to start from (0 for start)
+     * @param pageSize   maximum number of elements to return.
+     * @param viewServiceURLMarker optional view service URL marker (overrides accessServiceURLMarker)
+     * @param accessServiceURLMarker optional access service URL marker used to identify which back end service to call
+     * @param requestBody optional effective time
+     * @return list of informal tags or
+     *  InvalidParameterException one of the parameters is null or invalid.
+     *  PropertyServerException there is a problem updating the element properties in the property server.
+     *  UserNotAuthorizedException the user does not have permission to perform this request.
+     */
+    @PostMapping(path = "/elements/{elementGUID}/tags/retrieve")
+
+    @Operation(summary="getAttachedTags",
+            description="Return the informal tags attached to an element.",
+            externalDocs=@ExternalDocumentation(description="Element Feedback",
+                    url="https://egeria-project.org/patterns/metadata-manager/overview/#asset-feedback"))
+
+    public InformalTagsResponse getAttachedTags(@PathVariable String                        serverName,
+                                                @PathVariable String                        elementGUID,
+                                                @RequestParam int                           startFrom,
+                                                       @RequestParam int                           pageSize,
+                                                       @RequestParam (required = false)
+                                                       String                         viewServiceURLMarker,
+                                                       @RequestParam (required = false, defaultValue = "asset-manager")
+                                                       String                         accessServiceURLMarker,
+                                                       @RequestBody(required = false) EffectiveTimeQueryRequestBody requestBody)
+    {
+        return restAPI.getAttachedTags(serverName, elementGUID, startFrom, pageSize, viewServiceURLMarker, accessServiceURLMarker, requestBody);
     }
 
 
@@ -806,7 +918,6 @@ public class FeedbackManagerResource
     {
         return restAPI.updateComment(serverName, commentGUID, isMergeUpdate, viewServiceURLMarker, accessServiceURLMarker, requestBody);
     }
-
 
 
     /**
@@ -1273,7 +1384,7 @@ public class FeedbackManagerResource
                                                  String                         viewServiceURLMarker,
                                    @RequestParam (required = false, defaultValue = "asset-manager")
                                                  String         accessServiceURLMarker,
-                                   @RequestBody  NoteProperties requestBody)
+                                   @RequestBody NoteProperties requestBody)
     {
         return restAPI.createNote(serverName, noteLogGUID, viewServiceURLMarker, accessServiceURLMarker, requestBody);
     }

@@ -7,7 +7,8 @@ import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
 import org.odpi.openmetadata.frameworks.openmetadata.enums.EngineActionStatus;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementHeader;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementHeader;
+import org.odpi.openmetadata.frameworks.openmetadata.properties.ReferenceableProperties;
 
 import java.util.Date;
 import java.util.List;
@@ -45,9 +46,9 @@ public class EngineActionElement extends ReferenceableProperties
     private String                               requestType              = null;
     private Map<String, String>                  requestParameters        = null;
     private List<RequestSourceElement>           requestSourceElements    = null;
-    private List<ActionTargetElement> actionTargetElements = null;
-    private EngineActionStatus        actionStatus         = null;
-    private Date                      requestedTime        = null;
+    private List<ActionTargetElement>            actionTargetElements     = null;
+    private EngineActionStatus                   actionStatus             = null;
+    private Date                                 requestedTime            = null;
     private Date                                 requestedStartTime       = null;
     private Date                                 startTime                = null;
     private String                               processingEngineUserId   = null;
@@ -216,14 +217,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public List<String> getMandatoryGuards()
     {
-        if (mandatoryGuards == null)
-        {
-            return null;
-        }
-        else if (mandatoryGuards.isEmpty())
-        {
-            return null;
-        }
         return mandatoryGuards;
     }
 
@@ -246,14 +239,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public List<String> getReceivedGuards()
     {
-        if (receivedGuards == null)
-        {
-            return null;
-        }
-        else if (receivedGuards.isEmpty())
-        {
-            return null;
-        }
         return receivedGuards;
     }
 
@@ -474,16 +459,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public List<RequestSourceElement> getRequestSourceElements()
     {
-        if (requestSourceElements == null)
-        {
-            return null;
-        }
-
-        if (requestSourceElements.isEmpty())
-        {
-            return null;
-        }
-
         return requestSourceElements;
     }
 
@@ -506,16 +481,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public List<ActionTargetElement> getActionTargetElements()
     {
-        if (actionTargetElements == null)
-        {
-            return null;
-        }
-
-        if (actionTargetElements.isEmpty())
-        {
-            return null;
-        }
-
         return actionTargetElements;
     }
 
@@ -647,16 +612,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public Map<String, String> getRequestParameters()
     {
-        if (requestParameters == null)
-        {
-            return null;
-        }
-
-        if (requestParameters.isEmpty())
-        {
-            return null;
-        }
-
         return requestParameters;
     }
 
@@ -701,16 +656,6 @@ public class EngineActionElement extends ReferenceableProperties
      */
     public List<String> getCompletionGuards()
     {
-        if (completionGuards == null)
-        {
-            return null;
-        }
-
-        if (completionGuards.isEmpty())
-        {
-            return null;
-        }
-
         return completionGuards;
     }
 

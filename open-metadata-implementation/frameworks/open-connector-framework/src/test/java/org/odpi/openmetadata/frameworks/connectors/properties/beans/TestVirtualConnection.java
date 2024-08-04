@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.ArrayList;
@@ -73,16 +75,16 @@ public class TestVirtualConnection
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getDisplayName().equals("TestDisplayName"));
         assertTrue(resultObject.getDescription().equals("TestDescription"));
         assertTrue(resultObject.getConnectorType().equals(connectorType));
         assertTrue(resultObject.getEndpoint().equals(endpoint));
-        assertTrue(resultObject.getSecuredProperties() == null);
+        assertTrue(resultObject.getSecuredProperties() != null);
 
         assertTrue(resultObject.getEmbeddedConnections() != null);
     }
@@ -140,7 +142,7 @@ public class TestVirtualConnection
 
         nullObject.setEmbeddedConnections(new ArrayList<>());
 
-        assertTrue(nullObject.getEmbeddedConnections() == null);
+        assertTrue(nullObject.getEmbeddedConnections() != null);
     }
 
 
@@ -283,7 +285,7 @@ public class TestVirtualConnection
         /*
          * Through superclass
          */
-        PropertyBase propertyBase = getTestObject();
+        ElementBase propertyBase = getTestObject();
 
         try
         {
@@ -296,7 +298,7 @@ public class TestVirtualConnection
 
         try
         {
-            validateResultObject((VirtualConnection) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((VirtualConnection) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

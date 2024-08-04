@@ -4,10 +4,13 @@ package org.odpi.openmetadata.adapters.connectors.surveyaction.surveycsv;
 
 import org.odpi.openmetadata.frameworks.auditlog.AuditLogReportingComponent;
 import org.odpi.openmetadata.frameworks.auditlog.ComponentDevelopmentStatus;
+import org.odpi.openmetadata.frameworks.connectors.controls.SupportedTechnologyType;
 import org.odpi.openmetadata.frameworks.connectors.properties.beans.ConnectorType;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.ActionTargetType;
 import org.odpi.openmetadata.frameworks.openmetadata.refdata.DeployedImplementationType;
 import org.odpi.openmetadata.frameworks.surveyaction.SurveyActionServiceProvider;
+import org.odpi.openmetadata.frameworks.surveyaction.controls.AnalysisStep;
+import org.odpi.openmetadata.adapters.connectors.surveyaction.controls.SurveyFileAnnotationType;
 
 import java.util.ArrayList;
 
@@ -72,6 +75,7 @@ public class CSVSurveyServiceProvider extends SurveyActionServiceProvider
         actionTargetType.setDeployedImplementationType(DeployedImplementationType.CSV_FILE.getDeployedImplementationType());
 
         super.supportedActionTargetTypes.add(actionTargetType);
+        super.supportedTechnologyTypes = SupportedTechnologyType.getSupportedTechnologyTypes(new DeployedImplementationType[]{DeployedImplementationType.CSV_FILE});
 
         /*
          * Set up the component description used in the connector's audit log messages.
@@ -85,5 +89,9 @@ public class CSVSurveyServiceProvider extends SurveyActionServiceProvider
         componentDescription.setComponentWikiURL(connectorWikiPage);
 
         super.setConnectorComponentDescription(componentDescription);
+
+        super.supportedAnalysisSteps = AnalysisStep.getAnalysisStepTypes(new AnalysisStep[] {
+                AnalysisStep.CHECK_ASSET, AnalysisStep.MEASURE_RESOURCE, AnalysisStep.SCHEMA_EXTRACTION, AnalysisStep.PROFILE_DATA});
+        super.producedAnnotationTypes    = SurveyFileAnnotationType.getCSVSurveyAnnotationTypeTypes();
     }
 }

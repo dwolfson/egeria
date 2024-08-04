@@ -6,6 +6,7 @@ package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 import com.fasterxml.jackson.annotation.JsonAutoDetect;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.annotation.JsonInclude;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassificationHeader;
 
 import java.util.*;
 
@@ -58,18 +59,7 @@ public class SecurityTags extends ElementClassificationHeader
      */
     public List<String> getSecurityLabels()
     {
-        if (securityLabels == null)
-        {
-            return null;
-        }
-        else if (securityLabels.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new ArrayList<>(securityLabels);
-        }
+        return securityLabels;
     }
 
 
@@ -91,18 +81,7 @@ public class SecurityTags extends ElementClassificationHeader
      */
     public Map<String, Object> getSecurityProperties()
     {
-        if (securityProperties == null)
-        {
-            return null;
-        }
-        else if (securityProperties.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new HashMap<>(securityProperties);
-        }
+        return securityProperties;
     }
 
 

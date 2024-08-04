@@ -11,7 +11,7 @@ import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementStatus;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.ElementStatus;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.PlaceholderProperty;
 import org.odpi.openmetadata.frameworks.governanceaction.search.ElementProperties;
 import org.odpi.openmetadata.frameworks.integration.iterator.IntegrationIterator;
@@ -36,6 +36,7 @@ public class OSSUnityCatalogInsideCatalogSyncSchema extends OSSUnityCatalogInsid
 {
     private String templateGUID = null;
 
+
     /**
      * Set up the schema synchronizer.
      *
@@ -49,6 +50,8 @@ public class OSSUnityCatalogInsideCatalogSyncSchema extends OSSUnityCatalogInsid
      * @param ucServerEndpoint the server endpoint used to constructing the qualified names
      * @param templates templates supplied through the catalog target
      * @param configurationProperties configuration properties supplied through the catalog target
+     * @param excludeNames list of catalogs to ignore (and include all others)
+     * @param includeNames list of catalogs to include (and ignore all others) - overrides excludeCatalogs
      * @param auditLog logging destination
      */
     public OSSUnityCatalogInsideCatalogSyncSchema(String                           connectorName,
@@ -61,6 +64,8 @@ public class OSSUnityCatalogInsideCatalogSyncSchema extends OSSUnityCatalogInsid
                                                   String                           ucServerEndpoint,
                                                   Map<String, String>              templates,
                                                   Map<String, Object>              configurationProperties,
+                                                  List<String>                     excludeNames,
+                                                  List<String>                     includeNames,
                                                   AuditLog                         auditLog)
     {
         super(connectorName,
@@ -74,6 +79,8 @@ public class OSSUnityCatalogInsideCatalogSyncSchema extends OSSUnityCatalogInsid
               DeployedImplementationType.OSS_UC_SCHEMA,
               templates,
               configurationProperties,
+              excludeNames,
+              includeNames,
               auditLog);
 
         if (templates != null)
@@ -114,33 +121,44 @@ public class OSSUnityCatalogInsideCatalogSyncSchema extends OSSUnityCatalogInsid
 
             if (nextElement != null)
             {
-                SchemaInfo schemaInfo = null;
+                /*
+                 * Check that this is a UC Schema.
+                 */
+                String deployedImplementationType = propertyHelper.getStringProperty(catalogTargetName,
+                                                                                     OpenMetadataProperty.DEPLOYED_IMPLEMENTATION_TYPE.name,
+                                                                                     nextElement.getElement().getElementProperties(),
+                                                                                     methodName);
 
-                String schemaName = propertyHelper.getStringProperty(catalogTargetName,
-                                                                     OpenMetadataProperty.NAME.name,
-                                                                     nextElement.getElement().getElementProperties(),
-                                                                     methodName);
+                if (DeployedImplementationType.OSS_UC_SCHEMA.getDeployedImplementationType().equals(deployedImplementationType))
+                {
+                    SchemaInfo schemaInfo = null;
 
-                try
-                {
-                    schemaInfo = ucConnector.getSchema(schemaName);
-                }
-                catch (Exception missing)
-                {
-                    // this is not necessarily an error
-                }
+                    String schemaName = propertyHelper.getStringProperty(catalogTargetName,
+                                                                         OpenMetadataProperty.NAME.name,
+                                                                         nextElement.getElement().getElementProperties(),
+                                                                         methodName);
 
-                MemberAction memberAction = MemberAction.NO_ACTION;
-                if (schemaInfo == null)
-                {
-                    memberAction = nextElement.getMemberAction(null, null);
-                }
-                else if (noMismatchInExternalIdentifier(schemaInfo.getSchema_id(), nextElement))
-                {
-                    memberAction = nextElement.getMemberAction(this.getDateFromLong(schemaInfo.getCreated_at()), this.getDateFromLong(schemaInfo.getUpdated_at()));
-                }
+                    try
+                    {
+                        schemaInfo = ucConnector.getSchema(schemaName);
+                    }
+                    catch (Exception missing)
+                    {
+                        // this is not necessarily an error
+                    }
 
-                this.takeAction(memberAction, nextElement, schemaInfo);
+                    MemberAction memberAction = MemberAction.NO_ACTION;
+                    if (schemaInfo == null)
+                    {
+                        memberAction = nextElement.getMemberAction(null, null);
+                    }
+                    else if (noMismatchInExternalIdentifier(schemaInfo.getSchema_id(), nextElement))
+                    {
+                        memberAction = nextElement.getMemberAction(this.getDateFromLong(schemaInfo.getCreated_at()), this.getDateFromLong(schemaInfo.getUpdated_at()));
+                    }
+
+                    this.takeAction(memberAction, nextElement, schemaInfo);
+                }
             }
         }
 

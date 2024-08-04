@@ -4,6 +4,8 @@ package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
 import org.odpi.openmetadata.frameworks.openmetadata.enums.CommentType;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -63,10 +65,10 @@ public class TestComment
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getCommentText().equals("TestCommentText"));
         assertTrue(resultObject.getUser().equals("TestUser"));
@@ -227,7 +229,7 @@ public class TestComment
         /*
          * Through superclass
          */
-        PropertyBase  propertyBase = getTestObject();
+        ElementBase  propertyBase = getTestObject();
 
         try
         {
@@ -240,7 +242,7 @@ public class TestComment
 
         try
         {
-            validateResultObject((Comment) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((Comment) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

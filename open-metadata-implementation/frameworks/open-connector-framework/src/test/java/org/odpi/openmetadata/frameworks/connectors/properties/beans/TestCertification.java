@@ -3,6 +3,8 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.databind.ObjectMapper;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementClassification;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementType;
 import org.testng.annotations.Test;
 
 import java.util.*;
@@ -74,10 +76,10 @@ public class TestCertification
     {
         assertTrue(resultObject.getType().equals(type));
         assertTrue(resultObject.getGUID().equals("TestGUID"));
-        assertTrue(resultObject.getClassifications() == null);
+        assertTrue(resultObject.getClassifications() != null);
 
         assertTrue(resultObject.getQualifiedName().equals("TestQualifiedName"));
-        assertTrue(resultObject.getAdditionalProperties() == null);
+        assertTrue(resultObject.getAdditionalProperties() != null);
 
         assertTrue(resultObject.getCertificateGUID().equals("TestCertificationTypeGUID"));
         assertTrue(resultObject.getCertificationTypeName().equals("TestCertificationTypeName"));
@@ -258,7 +260,7 @@ public class TestCertification
         /*
          * Through superclass
          */
-        PropertyBase  propertyBase = getTestObject();
+        ElementBase  propertyBase = getTestObject();
 
         try
         {
@@ -271,7 +273,7 @@ public class TestCertification
 
         try
         {
-            validateResultObject((Certification) objectMapper.readValue(jsonString, PropertyBase.class));
+            validateResultObject((Certification) objectMapper.readValue(jsonString, ElementBase.class));
         }
         catch (Throwable  exc)
         {

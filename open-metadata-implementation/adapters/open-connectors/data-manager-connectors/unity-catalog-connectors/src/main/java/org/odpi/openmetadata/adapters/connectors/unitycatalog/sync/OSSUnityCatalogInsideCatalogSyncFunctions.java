@@ -11,7 +11,7 @@ import org.odpi.openmetadata.frameworks.auditlog.AuditLog;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.InvalidParameterException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.PropertyServerException;
 import org.odpi.openmetadata.frameworks.connectors.ffdc.UserNotAuthorizedException;
-import org.odpi.openmetadata.frameworks.connectors.properties.beans.ElementStatus;
+import org.odpi.openmetadata.frameworks.openmetadata.enums.ElementStatus;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.PlaceholderProperty;
 import org.odpi.openmetadata.frameworks.governanceaction.search.ElementProperties;
 import org.odpi.openmetadata.frameworks.integration.iterator.IntegrationIterator;
@@ -51,6 +51,8 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
      * @param ucServerEndpoint the server endpoint used to constructing the qualified names
      * @param templates templates supplied through the catalog target
      * @param configurationProperties configuration properties supplied through the catalog target
+     * @param excludeNames list of catalogs to ignore (and include all others)
+     * @param includeNames list of catalogs to include (and ignore all others) - overrides excludeCatalogs
      * @param auditLog logging destination
      */
     public OSSUnityCatalogInsideCatalogSyncFunctions(String                           connectorName,
@@ -63,6 +65,8 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
                                                      String                           ucServerEndpoint,
                                                      Map<String, String>              templates,
                                                      Map<String, Object>              configurationProperties,
+                                                     List<String>                     excludeNames,
+                                                     List<String>                     includeNames,
                                                      AuditLog                         auditLog)
     {
         super(connectorName,
@@ -76,6 +80,8 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
               DeployedImplementationType.OSS_UC_FUNCTION,
               templates,
               configurationProperties,
+              excludeNames,
+              includeNames,
               auditLog);
 
         if (templates != null)
@@ -116,38 +122,52 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
 
             if (nextElement != null)
             {
-                FunctionInfo functionInfo = null;
+                /*
+                 * Check that this is a UC Function.
+                 */
+                String deployedImplementationType = propertyHelper.getStringProperty(catalogTargetName,
+                                                                                     OpenMetadataProperty.DEPLOYED_IMPLEMENTATION_TYPE.name,
+                                                                                     nextElement.getElement().getElementProperties(),
+                                                                                     methodName);
 
-                String functionName = propertyHelper.getStringProperty(catalogTargetName,
-                                                                     OpenMetadataProperty.NAME.name,
-                                                                     nextElement.getElement().getElementProperties(),
-                                                                     methodName);
+                if (DeployedImplementationType.OSS_UC_FUNCTION.getDeployedImplementationType().equals(deployedImplementationType))
+                {
+                    FunctionInfo functionInfo = null;
 
-                try
-                {
-                    functionInfo = ucConnector.getFunction(functionName);
-                }
-                catch (Exception missing)
-                {
-                    // this is not necessarily an error
-                }
+                    String functionName = propertyHelper.getStringProperty(catalogTargetName,
+                                                                           OpenMetadataProperty.NAME.name,
+                                                                           nextElement.getElement().getElementProperties(),
+                                                                           methodName);
 
-                MemberAction memberAction = MemberAction.NO_ACTION;
-                if (functionInfo == null)
-                {
-                    memberAction = nextElement.getMemberAction(null, null);
-                }
-                else if (noMismatchInExternalIdentifier(functionInfo.getFunction_id(), nextElement))
-                {
-                    memberAction = nextElement.getMemberAction(this.getDateFromLong(functionInfo.getCreated_at()),
-                                                               this.getDateFromLong(functionInfo.getUpdated_at()));
-                }
+                    if (context.elementShouldBeCatalogued(functionName, excludeNames, includeNames))
+                    {
+                        try
+                        {
+                            functionInfo = ucConnector.getFunction(functionName);
+                        }
+                        catch (Exception missing)
+                        {
+                            // this is not necessarily an error
+                        }
 
-                this.takeAction(context.getAnchorGUID(nextElement.getElement()),
-                                super.getUCSchemaFomMember(nextElement),
-                                memberAction,
-                                nextElement,
-                                functionInfo);
+                        MemberAction memberAction = MemberAction.NO_ACTION;
+                        if (functionInfo == null)
+                        {
+                            memberAction = nextElement.getMemberAction(null, null);
+                        }
+                        else if (noMismatchInExternalIdentifier(functionInfo.getFunction_id(), nextElement))
+                        {
+                            memberAction = nextElement.getMemberAction(this.getDateFromLong(functionInfo.getCreated_at()),
+                                                                       this.getDateFromLong(functionInfo.getUpdated_at()));
+                        }
+
+                        this.takeAction(context.getAnchorGUID(nextElement.getElement()),
+                                        super.getUCSchemaFomMember(nextElement),
+                                        memberAction,
+                                        nextElement,
+                                        functionInfo);
+                    }
+                }
             }
         }
 
@@ -435,7 +455,7 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
         placeholderProperties.put(PlaceholderProperty.SERVER_NETWORK_ADDRESS.getName(), ucServerEndpoint);
         placeholderProperties.put(UnityCatalogPlaceholderProperty.CATALOG_NAME.getName(), functionInfo.getCatalog_name());
         placeholderProperties.put(UnityCatalogPlaceholderProperty.SCHEMA_NAME.getName(), functionInfo.getSchema_name());
-        placeholderProperties.put(UnityCatalogPlaceholderProperty.FUNCTION_NAME.getName(), functionInfo.getFull_name());
+        placeholderProperties.put(UnityCatalogPlaceholderProperty.FUNCTION_NAME.getName(), functionInfo.getName());
         placeholderProperties.put(PlaceholderProperty.DESCRIPTION.getName(), functionInfo.getComment());
         placeholderProperties.put(PlaceholderProperty.VERSION_IDENTIFIER.getName(), null);
 
@@ -508,17 +528,21 @@ public class OSSUnityCatalogInsideCatalogSyncFunctions extends OSSUnityCatalogIn
     {
         final String methodName = "createSchemaAttributesForUCFunction";
 
+        ElementProperties properties = propertyHelper.addStringProperty(null,
+                                                                        OpenMetadataProperty.QUALIFIED_NAME.name,
+                                                                        super.getQualifiedName(functionInfo.getFull_name()) + "_rootSchemaType");
+
         /*
          * Create the root schema type.
          */
-        openMetadataAccess.createMetadataElementInStore(OpenMetadataType.TABULAR_SCHEMA_TYPE.typeName,
+        openMetadataAccess.createMetadataElementInStore(OpenMetadataType.API_SCHEMA_TYPE_TYPE_NAME,
                                                         ElementStatus.ACTIVE,
                                                         null,
                                                         functionGUID,
                                                         false,
                                                         null,
                                                         null,
-                                                        null,
+                                                        properties,
                                                         functionGUID,
                                                         OpenMetadataType.ASSET_SCHEMA_TYPE_RELATIONSHIP.typeName,
                                                         null,

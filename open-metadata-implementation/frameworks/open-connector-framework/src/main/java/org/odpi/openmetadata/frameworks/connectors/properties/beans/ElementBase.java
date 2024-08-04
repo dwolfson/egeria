@@ -3,6 +3,7 @@
 package org.odpi.openmetadata.frameworks.connectors.properties.beans;
 
 import com.fasterxml.jackson.annotation.*;
+import org.odpi.openmetadata.frameworks.openmetadata.metadataelements.ElementHeader;
 
 import java.util.*;
 
@@ -68,18 +69,7 @@ public class ElementBase extends ElementHeader
      */
     public Map<String, Object> getExtendedProperties()
     {
-        if (extendedProperties == null)
-        {
-            return null;
-        }
-        else if (extendedProperties.isEmpty())
-        {
-            return null;
-        }
-        else
-        {
-            return new HashMap<>(extendedProperties);
-        }
+        return extendedProperties;
     }
 
 

@@ -80,7 +80,7 @@ public class TestEmbeddedConnection
 
         nullObject.setArguments(new HashMap<>());
 
-        assertTrue(nullObject.getArguments() == null);
+        assertTrue(nullObject.getArguments() != null);
     }
 
 
@@ -145,29 +145,6 @@ public class TestEmbeddedConnection
         try
         {
             validateResultObject(objectMapper.readValue(jsonString, EmbeddedConnection.class));
-        }
-        catch (Throwable  exc)
-        {
-            assertTrue(false, "Exception: " + exc.getMessage());
-        }
-
-        /*
-         * Through superclass
-         */
-        PropertyBase propertyBase = getTestObject();
-
-        try
-        {
-            jsonString = objectMapper.writeValueAsString(propertyBase);
-        }
-        catch (Throwable  exc)
-        {
-            assertTrue(false, "Exception: " + exc.getMessage());
-        }
-
-        try
-        {
-            validateResultObject((EmbeddedConnection) objectMapper.readValue(jsonString, PropertyBase.class));
         }
         catch (Throwable  exc)
         {

@@ -43,18 +43,20 @@ import org.odpi.openmetadata.adapters.connectors.resource.jdbc.JDBCResourceConne
 import org.odpi.openmetadata.adapters.connectors.secretsstore.envar.EnvVarSecretsStoreProvider;
 import org.odpi.openmetadata.adapters.connectors.surveyaction.surveycsv.CSVSurveyServiceProvider;
 import org.odpi.openmetadata.adapters.connectors.surveyaction.surveyfile.FileSurveyServiceProvider;
-import org.odpi.openmetadata.adapters.connectors.surveyaction.surveyfolder.FolderRequestParameter;
+import org.odpi.openmetadata.adapters.connectors.surveyaction.controls.FolderRequestParameter;
 import org.odpi.openmetadata.adapters.connectors.surveyaction.surveyfolder.FolderSurveyServiceProvider;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.controls.UnityCatalogConfigurationProperty;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.controls.UnityCatalogPlaceholderProperty;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.resource.OSSUnityCatalogResourceProvider;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.survey.OSSUnityCatalogInsideCatalogSurveyProvider;
+import org.odpi.openmetadata.adapters.connectors.unitycatalog.survey.OSSUnityCatalogInsideSchemaSurveyProvider;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.survey.OSSUnityCatalogServerSurveyProvider;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.sync.OSSUnityCatalogInsideCatalogSyncProvider;
 import org.odpi.openmetadata.adapters.connectors.unitycatalog.sync.OSSUnityCatalogServerSyncProvider;
 import org.odpi.openmetadata.adapters.eventbus.topic.kafka.KafkaOpenMetadataTopicProvider;
 import org.odpi.openmetadata.adminservices.configuration.registration.*;
 import org.odpi.openmetadata.frameworks.auditlog.ComponentDevelopmentStatus;
+import org.odpi.openmetadata.frameworks.connectors.controls.SupportedTechnologyType;
 import org.odpi.openmetadata.frameworks.governanceaction.controls.*;
 import org.odpi.openmetadata.frameworks.openmetadata.enums.*;
 import org.odpi.openmetadata.frameworks.openmetadata.mapper.PropertyFacetValidValues;
@@ -850,19 +852,27 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                         null,
                                                                         null);
 
+        /*
+         * Add integration connectors to the integration group
+         */
+
         Map<String, Object> configurationProperties = new HashMap<>();
         configurationProperties.put("waitForDirectory", "true");
 
         /*
-         * The sample data cataloguer will catalog all of the files in the sample-data data directory.
+         * The sample data cataloguer will catalog all the files in the sample-data data directory.
          */
-        String sampleDataIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(DataFilesMonitorIntegrationProvider.class.getName(),
-                                                                                     configurationProperties,
-                                                                                     OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":SampleDataFilesMonitorIntegrationConnector",
-                                                                                     "SampleDataFilesMonitorIntegrationConnector",
-                                                                                     "Catalogs files found under the sample-data directory (folder).",
-                                                                                     "sample-data",
-                                                                                     null);
+        String sampleDataIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":SampleDataFilesMonitorIntegrationConnector";
+        String sampleDataIntegrationConnectorGUID = "cd6479e1-2fe7-4426-b358-8a0cf70be117";
+        archiveHelper.setGUID(sampleDataIntegrationConnectorQualifiedName, sampleDataIntegrationConnectorGUID);
+        String guid = archiveHelper.addIntegrationConnector(DataFilesMonitorIntegrationProvider.class.getName(),
+                                                            configurationProperties,
+                                                            sampleDataIntegrationConnectorQualifiedName,
+                                                            "SampleDataFilesMonitorIntegrationConnector",
+                                                            "Catalogs files found under the sample-data directory (folder).",
+                                                            "sample-data",
+                                                            null);
+        assert(sampleDataIntegrationConnectorGUID.equals(guid));
 
         archiveHelper.addRegisteredIntegrationConnector(integrationGroupGUID,
                                                         "SampleDataCataloguer",
@@ -881,13 +891,17 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
          * The landing area connector expects to be given catalog targets that are folders representing directories inside the landing area directory.
          */
         configurationProperties.put("catalogAllFiles", "true");
-        String landingAreaIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(DataFilesMonitorIntegrationProvider.class.getName(),
-                                                                                           configurationProperties,
-                                                                                          OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":LandingAreaFilesMonitorIntegrationConnector",
-                                                                                          "LandingAreaFilesMonitorIntegrationConnector",
-                                                                                          "Catalogs files found under the landing-area directory (folder) via catalog targets.",
-                                                                                          null,
-                                                                                          null);
+        String landingAreaIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":LandingAreaFilesMonitorIntegrationConnector";
+        String landingAreaIntegrationConnectorGUID = "1b98cdac-dd0a-4621-93db-99ef5a1098bc";
+        archiveHelper.setGUID(landingAreaIntegrationConnectorQualifiedName, landingAreaIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(DataFilesMonitorIntegrationProvider.class.getName(),
+                                                     configurationProperties,
+                                                     landingAreaIntegrationConnectorQualifiedName,
+                                                     "LandingAreaFilesMonitorIntegrationConnector",
+                                                     "Catalogs files found under the landing-area directory (folder) via catalog targets.",
+                                                     null,
+                                                     null);
+        assert(landingAreaIntegrationConnectorGUID.equals(guid));
 
         archiveHelper.addRegisteredIntegrationConnector(integrationGroupGUID,
                                                         "LandingAreaCataloguer",
@@ -901,14 +915,20 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                         ResourceUse.CATALOG_RESOURCE.getResourceUse(),
                                                         ResourceUse.CATALOG_RESOURCE.getDescription());
 
-
-        String databaseIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(JDBCIntegrationConnectorProvider.class.getName(),
-                                                                                        null,
-                                                                                        OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":JDBCIntegrationConnector",
-                                                                                        "JDBCIntegrationConnector",
-                                                                                        "Catalogs JDBC database schemas, tables and columns.",
-                                                                                        null,
-                                                                                        null);
+        /*
+         * The JDBC integration connector is able to catalog JDBC databases.
+         */
+        String databaseIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":JDBCIntegrationConnector";
+        String databaseIntegrationConnectorGUID = "70dcd0b7-9f06-48ad-ad44-ae4d7a7762aa";
+        archiveHelper.setGUID(databaseIntegrationConnectorQualifiedName, databaseIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(JDBCIntegrationConnectorProvider.class.getName(),
+                                                     null,
+                                                     databaseIntegrationConnectorQualifiedName,
+                                                     "JDBCIntegrationConnector",
+                                                     "Catalogs JDBC database schemas, tables and columns.",
+                                                     null,
+                                                     null);
+        assert(databaseIntegrationConnectorGUID.equals(guid));
 
         deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.JDBC_RELATIONAL_DATABASE.getQualifiedName());
         archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
@@ -928,13 +948,20 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                         60,
                                                         databaseIntegrationConnectorGUID);
 
-        String postgresIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(PostgresServerIntegrationProvider.class.getName(),
-                                                                                        null,
-                                                                                        OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":PostgreSQLServerIntegrationConnector",
-                                                                                        "PostgreSQLServerIntegrationConnector",
-                                                                                        "Catalogs PostgreSQL Databases in a PostgreSQL Server.",
-                                                                                        null,
-                                                                                        null);
+        /*
+         * Catalog the contents of a PostgreSQL server.
+         */
+        String postgresIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":PostgreSQLServerIntegrationConnector";
+        String postgresIntegrationConnectorGUID = "36f69fd0-54ba-4f59-8a44-11ccf2687a34";
+        archiveHelper.setGUID(postgresIntegrationConnectorQualifiedName, postgresIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(PostgresServerIntegrationProvider.class.getName(),
+                                                     null,
+                                                     postgresIntegrationConnectorQualifiedName,
+                                                     "PostgreSQLServerIntegrationConnector",
+                                                     "Catalogs PostgreSQL Databases in a PostgreSQL Server.",
+                                                     null,
+                                                     null);
+        assert(postgresIntegrationConnectorGUID.equals(guid));
         deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.POSTGRESQL_SERVER.getQualifiedName());
         archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
                                                         postgresIntegrationConnectorGUID,
@@ -947,13 +974,20 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                         60,
                                                         postgresIntegrationConnectorGUID);
 
-        String kafkaIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(KafkaTopicIntegrationProvider.class.getName(),
-                                                                                     null,
-                                                                                     OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":KafkaTopicIntegrationConnector",
-                                                                                     "KafkaTopicIntegrationConnector",
-                                                                                     "Catalogs Apache Kafka Topics.",
-                                                                                     null,
-                                                                                     null);
+        /*
+         * Catalog topics managed by an Apache Kafka server.
+         */
+        String kafkaIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":KafkaTopicIntegrationConnector";
+        String kafkaIntegrationConnectorGUID = "fa1f711c-0b34-4b57-8e6e-16162b132b0c";
+        archiveHelper.setGUID(kafkaIntegrationConnectorQualifiedName, kafkaIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(KafkaTopicIntegrationProvider.class.getName(),
+                                                     null,
+                                                     kafkaIntegrationConnectorQualifiedName,
+                                                     "KafkaTopicIntegrationConnector",
+                                                     "Catalogs Apache Kafka Topics managed by an Apache Kafka server.",
+                                                     null,
+                                                     null);
+        assert(kafkaIntegrationConnectorGUID.equals(guid));
         deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.APACHE_KAFKA_SERVER.getQualifiedName());
         archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
                                                         kafkaIntegrationConnectorGUID,
@@ -966,13 +1000,20 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                         60,
                                                         kafkaIntegrationConnectorGUID);
 
-        String apiIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(OpenAPIMonitorIntegrationProvider.class.getName(),
-                                                                                   null,
-                                                                                   OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":OpenAPIIntegrationConnector",
-                                                                                   "OpenAPIIntegrationConnector",
-                                                                                   "Catalogs REST APIs through the Open API Specification.",
-                                                                                   null,
-                                                                                   null);
+        /*
+         * Catalog Open APIs
+         */
+        String apiIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":OpenAPIIntegrationConnector";
+        String apiIntegrationConnectorGUID = "b89d9a5a-2ea6-49bc-a4fc-e7df9f3ca93e";
+        archiveHelper.setGUID(apiIntegrationConnectorQualifiedName, apiIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(OpenAPIMonitorIntegrationProvider.class.getName(),
+                                                     null,
+                                                     apiIntegrationConnectorQualifiedName,
+                                                     "OpenAPIIntegrationConnector",
+                                                     "Catalogs REST APIs through the Open API Specification.",
+                                                     null,
+                                                     null);
+        assert(apiIntegrationConnectorGUID.equals(guid));
 
         archiveHelper.addRegisteredIntegrationConnector(integrationGroupGUID,
                                                         "OpenAPICataloguer",
@@ -980,47 +1021,61 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                         null,
                                                         60,
                                                         apiIntegrationConnectorGUID);
-        deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.SOFTWARE_SERVER.getQualifiedName());
+        deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.OMAG_SERVER_PLATFORM.getQualifiedName());
         archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
                                                         apiIntegrationConnectorGUID,
                                                         ResourceUse.CATALOG_RESOURCE.getResourceUse(),
                                                         ResourceUse.CATALOG_RESOURCE.getDescription());
 
-        String ucCatalogIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(OSSUnityCatalogInsideCatalogSyncProvider.class.getName(),
-                                                                                        null,
-                                                                                        OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":OSSUnityCatalogInsideCatalogIntegrationConnector",
-                                                                                        "OSSUnityCatalogInsideCatalogIntegrationConnector",
-                                                                                        "Synchronizes metadata information about the contents of catalogs found in the OSS Unity Catalog 'catalog of catalogs' with the open metadata ecosystem.",
-                                                                                        null,
-                                                                                        null);
+        /*
+         *  Catalog the content of a Unity Catalog (UC) Catalog
+         */
+        String ucCatalogIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":UnityCatalogInsideCatalogIntegrationConnector";
+        String ucCatalogIntegrationConnectorGUID = "74dde22f-2249-4ea3-af2b-b39e73f79b81";
+        archiveHelper.setGUID(ucCatalogIntegrationConnectorQualifiedName, ucCatalogIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(OSSUnityCatalogInsideCatalogSyncProvider.class.getName(),
+                                                     null,
+                                                     ucCatalogIntegrationConnectorQualifiedName,
+                                                     "UnityCatalogInsideCatalogIntegrationConnector",
+                                                     "Synchronizes metadata information about the contents of catalogs found in the OSS Unity Catalog 'catalog of catalogs' with the open metadata ecosystem.",
+                                                     null,
+                                                     null);
+        assert(ucCatalogIntegrationConnectorGUID.equals(guid));
 
         archiveHelper.addRegisteredIntegrationConnector(integrationGroupGUID,
-                                                        "OSSUnityCatalogInsideCatalogSynchronizer",
+                                                        "UnityCatalogInsideCatalogSynchronizer",
                                                         "ossuccatcatnpa",
                                                         null,
                                                         60,
                                                         ucCatalogIntegrationConnectorGUID);
 
-        deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.OSS_UC_CATALOG.getQualifiedName());
+        deployedImplementationTypeGUID = archiveHelper.getGUID(DeployedImplementationType.OSS_UNITY_CATALOG_SERVER.getQualifiedName());
         archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
                                                         ucCatalogIntegrationConnectorGUID,
                                                         ResourceUse.CATALOG_RESOURCE.getResourceUse(),
                                                         ResourceUse.CATALOG_RESOURCE.getDescription());
 
+        /*
+         * Set up Unity Catalog Server integration connector.
+         */
         Map<String, Object> ucConfigurationProperties = new HashMap<>();
 
         ucConfigurationProperties.put(UnityCatalogConfigurationProperty.FRIENDSHIP_GUID.getName(), ucCatalogIntegrationConnectorGUID);
 
-        String ucServerIntegrationConnectorGUID = archiveHelper.addIntegrationConnector(OSSUnityCatalogServerSyncProvider.class.getName(),
-                                                                                        ucConfigurationProperties,
-                                                                                        OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":OSSUnityCatalogServerIntegrationConnector",
-                                                                                        "OSSUnityCatalogServerIntegrationConnector",
-                                                                                        "Synchronizes metadata about the catalogs found in the OSS Unity Catalog 'catalog of catalogs' with the open metadata ecosystem.",
-                                                                                        null,
-                                                                                        null);
+        String ucServerIntegrationConnectorQualifiedName = OpenMetadataValidValues.DEFAULT_INTEGRATION_GROUP_QUALIFIED_NAME + ":UnityCatalogServerIntegrationConnector";
+        String ucServerIntegrationConnectorGUID = "06d068d9-9e08-4e67-8c59-073bbf1013af";
+        archiveHelper.setGUID(ucServerIntegrationConnectorQualifiedName, ucServerIntegrationConnectorGUID);
+        guid = archiveHelper.addIntegrationConnector(OSSUnityCatalogServerSyncProvider.class.getName(),
+                                                     ucConfigurationProperties,
+                                                     ucServerIntegrationConnectorQualifiedName,
+                                                     "UnityCatalogServerIntegrationConnector",
+                                                     "Synchronizes metadata about the catalogs found in the OSS Unity Catalog 'catalog of catalogs' with the open metadata ecosystem.",
+                                                     null,
+                                                     null);
+        assert(ucServerIntegrationConnectorGUID.equals(guid));
 
         archiveHelper.addRegisteredIntegrationConnector(integrationGroupGUID,
-                                                        "OSSUnityCatalogServerSynchronizer",
+                                                        "UnityCatalogServerSynchronizer",
                                                         "ossuccatnpa",
                                                         null,
                                                         60,
@@ -1051,6 +1106,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
         GovernanceActionDescription atlasSurveyDescription                     = this.getAtlasSurveyService();
         GovernanceActionDescription ucServerSurveyDescription                  = this.getUCServerSurveyService();
         GovernanceActionDescription ucCatalogSurveyDescription                 = this.getUCCatalogSurveyService();
+        GovernanceActionDescription ucSchemaSurveyDescription                  = this.getUCSchemaSurveyService();
         GovernanceActionDescription postgresServerSurveyDescription            = this.getPostgresServerSurveyService();
         GovernanceActionDescription postgresDatabaseSurveyDescription          = this.getPostgresDatabaseSurveyService();
         GovernanceActionDescription kafkaServerSurveyDescription               = this.getKafkaServerSurveyService();
@@ -1104,6 +1160,8 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
         this.addAtlasRequestType(assetSurveyEngineGUID, assetSurveyEngineName, atlasSurveyDescription);
         this.addUCServerRequestType(assetSurveyEngineGUID, assetSurveyEngineName, ucServerSurveyDescription);
         this.addUCCatalogRequestType(assetSurveyEngineGUID, assetSurveyEngineName, ucCatalogSurveyDescription);
+        this.addUCSchemaRequestType(assetSurveyEngineGUID, assetSurveyEngineName, ucSchemaSurveyDescription);
+        this.addUCVolumeRequestType(assetSurveyEngineGUID, assetSurveyEngineName, folderSurveyDescription);
         this.addPostgresServerRequestType(assetSurveyEngineGUID, assetSurveyEngineName, postgresServerSurveyDescription);
         this.addPostgresDatabaseRequestType(assetSurveyEngineGUID, assetSurveyEngineName, postgresDatabaseSurveyDescription);
         this.addKafkaServerRequestType(assetSurveyEngineGUID, assetSurveyEngineName, kafkaServerSurveyDescription);
@@ -1550,6 +1608,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * The template consists of a SoftwareServer asset linked to a software capability, plus a connection, linked
      * to the supplied connector type and an endpoint,
      *
+     * @param guid                             fixed unique identifier
      * @param deployedImplementationType       deployed implementation type for the technology
      * @param softwareCapabilityType           type of the associated capability
      * @param softwareCapabilityName           name for the associated capability
@@ -1564,19 +1623,20 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * @param replacementAttributeTypes        attributes that should have a replacement value to successfully use the template
      * @param placeholderPropertyTypes         placeholder variables used in the supplied parameters
      */
-    private void createSoftwareServerCatalogTemplate(DeployedImplementationType deployedImplementationType,
-                                                     DeployedImplementationType softwareCapabilityType,
-                                                     String softwareCapabilityName,
-                                                     Classification softwareCapabilityClassification,
-                                                     String serverName,
-                                                     String description,
-                                                     String userId,
-                                                     String password,
-                                                     String connectorTypeGUID,
-                                                     String networkAddress,
-                                                     Map<String, Object> configurationProperties,
+    private void createSoftwareServerCatalogTemplate(String                         guid,
+                                                     DeployedImplementationType     deployedImplementationType,
+                                                     DeployedImplementationType     softwareCapabilityType,
+                                                     String                         softwareCapabilityName,
+                                                     Classification                 softwareCapabilityClassification,
+                                                     String                         serverName,
+                                                     String                         description,
+                                                     String                         userId,
+                                                     String                         password,
+                                                     String                         connectorTypeGUID,
+                                                     String                         networkAddress,
+                                                     Map<String, Object>            configurationProperties,
                                                      List<ReplacementAttributeType> replacementAttributeTypes,
-                                                     List<PlaceholderPropertyType> placeholderPropertyTypes)
+                                                     List<PlaceholderPropertyType>  placeholderPropertyTypes)
     {
         final String methodName = "createSoftwareServerCatalogTemplate";
 
@@ -1597,6 +1657,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     "V1.0",
                                                                     null, methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   serverName,
@@ -1605,6 +1666,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         if (softwareCapabilityType != null)
         {
@@ -1682,11 +1744,13 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addPostgresServerCatalogTemplate()
     {
+        final String                  guid     = "542134e6-b9ce-4dce-8aef-22e8daf34fdb";
         JDBCResourceConnectorProvider provider = new JDBCResourceConnectorProvider();
 
         List<PlaceholderPropertyType> placeholderPropertyTypes = PostgresPlaceholderProperty.getPostgresServerPlaceholderPropertyTypes();
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.POSTGRESQL_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.POSTGRESQL_SERVER,
                                                  DeployedImplementationType.POSTGRESQL_DATABASE_MANAGER,
                                                  "Database Management System (DBMS)",
                                                  null,
@@ -1709,9 +1773,11 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addAtlasServerCatalogTemplate()
     {
+        final String            guid     = "fe6dce45-a978-4417-ab55-17f05b8bcea7";
         ApacheAtlasRESTProvider provider = new ApacheAtlasRESTProvider();
         
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.APACHE_ATLAS_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.APACHE_ATLAS_SERVER,
                                                  DeployedImplementationType.ASSET_CATALOG,
                                                  "Metadata Catalog",
                                                  null,
@@ -1733,9 +1799,12 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addUCServerCatalogTemplate()
     {
+        final String guid = "dcca9788-b30f-4007-b1ac-ec634aff6879";
+
         OSSUnityCatalogResourceProvider provider = new OSSUnityCatalogResourceProvider();
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.OSS_UNITY_CATALOG_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.OSS_UNITY_CATALOG_SERVER,
                                                  DeployedImplementationType.REST_API_MANAGER,
                                                  "Unity Catalog REST API",
                                                  null,
@@ -1752,8 +1821,12 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     }
 
 
+    /**
+     * This entry is used by Runtime Manager to display the platform report for 9443
+     */
     private void addDefaultOMAGServerPlatform()
     {
+        final String guid = "44bf319f-1e41-4da1-b771-2753b92b631a";
         OMAGServerPlatformProvider provider = new OMAGServerPlatformProvider();
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OMAG_SERVER_PLATFORM;
@@ -1779,6 +1852,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
             classifications.add(archiveHelper.getServerPurposeClassification(deployedImplementationType.getAssociatedClassification(), null));
         }
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   serverName,
@@ -1787,6 +1861,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         archiveHelper.addSoftwareCapability(softwareCapabilityType.getAssociatedTypeName(),
                                             qualifiedName + ":" + softwareCapabilityName,
@@ -1847,11 +1922,14 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addOMAGServerPlatformCatalogTemplate()
     {
+        final String guid = "9b06c4dc-ddc8-47ae-b56b-28775d3a96f0";
+
         OMAGServerPlatformProvider provider = new OMAGServerPlatformProvider();
 
         List<PlaceholderPropertyType> placeholderPropertyTypes = OMAGServerPlatformPlaceholderProperty.getPlaceholderPropertyTypes();
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.OMAG_SERVER_PLATFORM,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.OMAG_SERVER_PLATFORM,
                                                  DeployedImplementationType.USER_AUTHENTICATION_MANAGER,
                                                  "User Token Manager",
                                                  null,
@@ -1873,13 +1951,16 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addEngineHostCatalogTemplate()
     {
+        final String guid = "1764a891-4234-45f1-8cc3-536af40c790d";
+
         EngineHostProvider provider = new EngineHostProvider();
         
         Map<String, Object> configurationProperties = new HashMap<>();
 
         configurationProperties.put("serverName", PlaceholderProperty.SERVER_NAME.getPlaceholder());
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.ENGINE_HOST,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.ENGINE_HOST,
                                                  DeployedImplementationType.REST_API_MANAGER,
                                                  "Governance Engine Status APIs",
                                                  null,
@@ -1894,7 +1975,6 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                  null,
                                                  PlaceholderProperty.getServerWithUserIdOnlyPlaceholderPropertyTypes());
     }
-
 
 
     /**
@@ -1902,13 +1982,16 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addIntegrationDaemonCatalogTemplate()
     {
+        final String guid = "6b3516f0-dd13-4786-9601-07215f995197";
+
         IntegrationDaemonProvider provider = new IntegrationDaemonProvider();
         
         Map<String, Object> configurationProperties = new HashMap<>();
 
         configurationProperties.put("serverName", PlaceholderProperty.SERVER_NAME.getPlaceholder());
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.INTEGRATION_DAEMON,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.INTEGRATION_DAEMON,
                                                  DeployedImplementationType.REST_API_MANAGER,
                                                  "Governance Engine Status APIs",
                                                  null,
@@ -1925,19 +2008,21 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     }
 
 
-
     /**
      * Create a catalog template for a Metadata Access Server
      */
     private void addMetadataAccessServerCatalogTemplate()
     {
+        final String guid = "bd8de890-fa79-4c24-aab8-20b41b5893dd";
+
         MetadataAccessServerProvider provider = new MetadataAccessServerProvider();
 
         Map<String, Object> configurationProperties = new HashMap<>();
 
         configurationProperties.put("serverName", PlaceholderProperty.SERVER_NAME.getPlaceholder());
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.METADATA_ACCESS_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.METADATA_ACCESS_SERVER,
                                                  DeployedImplementationType.REST_API_MANAGER,
                                                  "Open Metadata Repository Access APIs",
                                                  null,
@@ -1954,19 +2039,21 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     }
 
 
-
     /**
      * Create a catalog template for a View Server
      */
     private void addViewServerCatalogTemplate()
     {
+        final String guid = "fd61ca01-390d-4aa2-a55d-426826aa4e1b";
+
         ViewServerProvider provider = new ViewServerProvider();
         
         Map<String, Object> configurationProperties = new HashMap<>();
 
         configurationProperties.put("serverName", PlaceholderProperty.SERVER_NAME.getPlaceholder());
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.VIEW_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.VIEW_SERVER,
                                                  DeployedImplementationType.REST_API_MANAGER,
                                                  "Open Metadata and Governance End User APIs",
                                                  null,
@@ -1983,17 +2070,19 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     }
 
 
-
     /**
      * Create a catalog template for Apache Kafka Server
      */
     private void addKafkaServerCatalogTemplate()
     {
+        final String guid = "5e1ff810-5418-43f7-b7c4-e6e062f9aff7";
+
         ApacheKafkaAdminProvider provider = new ApacheKafkaAdminProvider();
 
         List<PlaceholderPropertyType> placeholderPropertyTypes = KafkaPlaceholderProperty.getKafkaServerPlaceholderPropertyTypes();
 
-        this.createSoftwareServerCatalogTemplate(DeployedImplementationType.APACHE_KAFKA_SERVER,
+        this.createSoftwareServerCatalogTemplate(guid,
+                                                 DeployedImplementationType.APACHE_KAFKA_SERVER,
                                                  DeployedImplementationType.APACHE_KAFKA_EVENT_BROKER,
                                                  OpenMetadataType.EVENT_BROKER.typeName,
                                                  null,
@@ -2015,12 +2104,14 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * The template consists of a SoftwareServer asset linked to a software capability, plus a connection, linked
      * to the supplied connector type and an endpoint,
      *
+     * @param guid                             fixed unique identifier
      * @param deployedImplementationType       deployed implementation type for the technology
      * @param softwareCapabilityType           type of the associated capability
      * @param softwareCapabilityName           name for the associated capability
      * @param softwareCapabilityClassification classification for the software capability (or null)
      */
-    private void createHostCatalogTemplate(DeployedImplementationType     deployedImplementationType,
+    private void createHostCatalogTemplate(String                         guid,
+                                           DeployedImplementationType     deployedImplementationType,
                                            DeployedImplementationType     softwareCapabilityType,
                                            String                         softwareCapabilityName,
                                            Classification                 softwareCapabilityClassification)
@@ -2039,6 +2130,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     "V1.0",
                                                                     null, methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   PlaceholderProperty.DISPLAY_NAME.getPlaceholder(),
@@ -2047,6 +2139,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         if (softwareCapabilityType != null)
         {
@@ -2088,20 +2181,22 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addMacBookProCatalogTemplate()
     {
         final String methodName = "addMacBookProCatalogTemplate";
+        final String guid       = "32a9fd56-85c9-47fe-a211-9da3871bf4da";
 
         Classification classification = archiveHelper.getFileSystemClassification("APFS", "Enabled", methodName);
 
-        createHostCatalogTemplate(DeployedImplementationType.MACBOOK_PRO,
+        createHostCatalogTemplate(guid,
+                                  DeployedImplementationType.MACBOOK_PRO,
                                   DeployedImplementationType.UNIX_FILE_SYSTEM,
                                   "Local File System",
                                   classification);
     }
 
 
-
     private void addUCCatalogCatalogTemplate()
     {
         final String methodName = "addUCCatalogCatalogTemplate";
+        final String guid       = "5ee006aa-a6d6-411b-9b8d-5f720c079cae";
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OSS_UC_CATALOG;
 
@@ -2113,6 +2208,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     "V1.0",
                                                                     null, methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String capabilityGUID = archiveHelper.addSoftwareCapability(deployedImplementationType.getAssociatedTypeName(),
                                                                     qualifiedName,
                                                                     UnityCatalogPlaceholderProperty.CATALOG_NAME.getPlaceholder(),
@@ -2127,6 +2223,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     null,
                                                                     deployedImplementationType.getAssociatedTypeName(),
                                                                     OpenMetadataType.SOFTWARE_CAPABILITY.typeName);
+        assert(guid.equals(capabilityGUID));
 
         String deployedImplementationTypeGUID = archiveHelper.getGUID(deployedImplementationType.getQualifiedName());
 
@@ -2142,6 +2239,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addUCSchemaCatalogTemplate()
     {
         final String methodName = "addUCSchemaCatalogTemplate";
+        final String guid       = "5bf92b0f-3970-41ea-b0a3-aacfbf6fd92e";
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OSS_UC_SCHEMA;
         String                     fullName                   = UnityCatalogPlaceholderProperty.CATALOG_NAME.getPlaceholder() + "."
@@ -2161,6 +2259,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     null,
                                                                     methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   fullName,
@@ -2169,6 +2268,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         String deployedImplementationTypeGUID = archiveHelper.getGUID(deployedImplementationType.getQualifiedName());
 
@@ -2180,9 +2280,11 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                UnityCatalogPlaceholderProperty.getSchemaPlaceholderPropertyTypes());
     }
 
+
     private void addUCVolumeCatalogTemplate()
     {
         final String methodName = "addUCVolumeCatalogTemplate";
+        final String guid       = "92d2d2dc-0798-41f0-9512-b10548d312b7";
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OSS_UC_VOLUME;
         String                     fullName                   = UnityCatalogPlaceholderProperty.CATALOG_NAME.getPlaceholder() + "."
@@ -2209,6 +2311,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     null,
                                                                     methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   fullName,
@@ -2217,6 +2320,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         archiveHelper.addPropertyFacet(assetGUID,
                                        deployedImplementationType.getAssociatedTypeName(),
@@ -2268,6 +2372,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addUCTableCatalogTemplate()
     {
         final String methodName = "addUCTableCatalogTemplate";
+        final String guid       = "6cc1e5f5-4c1e-4290-a80e-e06643ffb13d";
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OSS_UC_TABLE;
         String                     fullName                   = UnityCatalogPlaceholderProperty.CATALOG_NAME.getPlaceholder() + "."
@@ -2300,6 +2405,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                              null,
                                                                              null));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   fullName,
@@ -2308,7 +2414,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
-
+        assert(guid.equals(assetGUID));
 
         String folderGUID = archiveHelper.addAnchoredAsset(OpenMetadataType.DATA_FOLDER.typeName,
                                                            assetGUID,
@@ -2347,6 +2453,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addUCFunctionCatalogTemplate()
     {
         final String methodName = "addUCFunctionCatalogTemplate";
+        final String guid       = "a490ba65-6104-4213-9be9-524e16fed8aa";
 
         DeployedImplementationType deployedImplementationType = DeployedImplementationType.OSS_UC_FUNCTION;
         String                     fullName                   = UnityCatalogPlaceholderProperty.CATALOG_NAME.getPlaceholder() + "."
@@ -2367,6 +2474,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     null,
                                                                     methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   fullName,
@@ -2375,6 +2483,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
+        assert(guid.equals(assetGUID));
 
         String deployedImplementationTypeGUID = archiveHelper.getGUID(deployedImplementationType.getQualifiedName());
 
@@ -2392,6 +2501,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * The template consists of a SoftwareServer asset linked to a software capability, plus a connection, linked
      * to the supplied connector type and an endpoint,
      *
+     * @param guid fixed guid for this template
      * @param deployedImplementationType deployed implementation type for the technology
      * @param serverQualifiedName qualified name of the owning server
      * @param softwareCapabilityName name for the associated capability
@@ -2400,7 +2510,8 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * @param replacementAttributeTypes attributes that should have a replacement value to successfully use the template
      * @param placeholderPropertyTypes placeholder variables used in the supplied parameters
      */
-    private   void createSoftwareCapabilityCatalogTemplate(DeployedImplementationType     deployedImplementationType,
+    private   void createSoftwareCapabilityCatalogTemplate(String                         guid,
+                                                           DeployedImplementationType     deployedImplementationType,
                                                            String                         serverQualifiedName,
                                                            String                         softwareCapabilityName,
                                                            String                         softwareCapabilityDescription,
@@ -2427,6 +2538,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
             classifications.add(softwareCapabilityClassification);
         }
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String capabilityGUID = archiveHelper.addSoftwareCapability(deployedImplementationType.getAssociatedTypeName(),
                                                                     qualifiedName,
                                                                     softwareCapabilityName,
@@ -2441,6 +2553,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                                     null,
                                                                     deployedImplementationType.getAssociatedTypeName(),
                                                                     OpenMetadataType.SOFTWARE_CAPABILITY.typeName);
+        assert(guid.equals(capabilityGUID));
 
         String deployedImplementationTypeGUID = archiveHelper.getGUID(deployedImplementationType.getQualifiedName());
 
@@ -2460,12 +2573,14 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addFileSystemTemplate()
     {
         final String methodName = "addFileSystemTemplate";
+        final String guid       = "522f228c-097c-4f90-9efc-26c1f2696f87";
 
         Classification fileSystemClassification = archiveHelper.getFileSystemClassification(PlaceholderProperty.FORMAT.getPlaceholder(),
                                                                                             PlaceholderProperty.ENCRYPTION.getPlaceholder(),
                                                                                             methodName);
 
-        createSoftwareCapabilityCatalogTemplate(DeployedImplementationType.FILE_SYSTEM,
+        createSoftwareCapabilityCatalogTemplate(guid,
+                                                DeployedImplementationType.FILE_SYSTEM,
                                                 null,
                                                 PlaceholderProperty.FILE_SYSTEM_NAME.getPlaceholder(),
                                                 PlaceholderProperty.DESCRIPTION.getPlaceholder(),
@@ -2478,12 +2593,14 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
     private void addUNIXFileSystemTemplate()
     {
         final String methodName = "addUNIXFileSystemTemplate";
+        final String guid = "27117270-8667-41d0-a99a-9118f9b60199";
 
         Classification fileSystemClassification = archiveHelper.getFileSystemClassification(PlaceholderProperty.FORMAT.getPlaceholder(),
                                                                                             PlaceholderProperty.ENCRYPTION.getPlaceholder(),
                                                                                             methodName);
 
-        createSoftwareCapabilityCatalogTemplate(DeployedImplementationType.UNIX_FILE_SYSTEM,
+        createSoftwareCapabilityCatalogTemplate(guid,
+                                                DeployedImplementationType.UNIX_FILE_SYSTEM,
                                                 null,
                                                 PlaceholderProperty.FILE_SYSTEM_NAME.getPlaceholder(),
                                                 PlaceholderProperty.DESCRIPTION.getPlaceholder(),
@@ -2498,8 +2615,10 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * The template consists of an asset linked to a connection, that is in turn linked
      * to the supplied connector type and an endpoint,
      *
+     * @param guid fixed unique identifier
      * @param deployedImplementationType deployed implementation type for the technology
      * @param assetName name for the asset
+     * @param assetDescription description
      * @param serverName optional server name
      * @param userId userId for the connection
      * @param password password for the connection
@@ -2509,17 +2628,18 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      * @param replacementAttributeTypes attributes that should have a replacement value to successfully use the template
      * @param placeholderPropertyTypes placeholder variables used in the supplied parameters
      */
-    private   void createServerAssetCatalogTemplate(DeployedImplementationType     deployedImplementationType,
-                                                    String                         assetName,
-                                                    String                         assetDescription,
-                                                    String                         serverName,
-                                                    String                         userId,
-                                                    String                         password,
-                                                    String                         connectorTypeGUID,
-                                                    String                         networkAddress,
-                                                    Map<String, Object>            configurationProperties,
-                                                    List<ReplacementAttributeType> replacementAttributeTypes,
-                                                    List<PlaceholderPropertyType>  placeholderPropertyTypes)
+    private   void createDataAssetCatalogTemplate(String                         guid,
+                                                  DeployedImplementationType     deployedImplementationType,
+                                                  String                         assetName,
+                                                  String                         assetDescription,
+                                                  String                         serverName,
+                                                  String                         userId,
+                                                  String                         password,
+                                                  String                         connectorTypeGUID,
+                                                  String                         networkAddress,
+                                                  Map<String, Object>            configurationProperties,
+                                                  List<ReplacementAttributeType> replacementAttributeTypes,
+                                                  List<PlaceholderPropertyType>  placeholderPropertyTypes)
     {
         final String methodName = "createServerAssetCatalogTemplate";
 
@@ -2544,6 +2664,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
         classifications.add(archiveHelper.getTemplateClassification(deployedImplementationType.getDeployedImplementationType() + " template",
                                                                     null, "V1.0", null, methodName));
 
+        archiveHelper.setGUID(qualifiedName, guid);
         String assetGUID = archiveHelper.addAsset(deployedImplementationType.getAssociatedTypeName(),
                                                   qualifiedName,
                                                   assetName,
@@ -2552,7 +2673,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                   null,
                                                   extendedProperties,
                                                   classifications);
-
+        assert(guid.equals(assetGUID));
 
         String endpointGUID = archiveHelper.addEndpoint(assetGUID,
                                                         deployedImplementationType.getAssociatedTypeName(),
@@ -2602,23 +2723,25 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addPostgresDatabaseCatalogTemplate()
     {
+        final String guid = "3d398b3f-7ae6-4713-952a-409f3dea8520";
         JDBCResourceConnectorProvider provider = new JDBCResourceConnectorProvider();
 
         List<PlaceholderPropertyType>  placeholderPropertyTypes = PostgresPlaceholderProperty.getPostgresDatabasePlaceholderPropertyTypes();
 
-        this.createServerAssetCatalogTemplate(DeployedImplementationType.POSTGRESQL_DATABASE,
-                                              PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder(),
-                                              PostgresPlaceholderProperty.DATABASE_DESCRIPTION.getPlaceholder(),
-                                              PlaceholderProperty.SERVER_NAME.getPlaceholder(),
-                                              PostgresPlaceholderProperty.DATABASE_USER_ID.getPlaceholder(),
-                                              PostgresPlaceholderProperty.DATABASE_PASSWORD.getPlaceholder(),
-                                              provider.getConnectorType().getGUID(),
-                                              "jdbc:postgresql://" +
+        this.createDataAssetCatalogTemplate(guid,
+                                            DeployedImplementationType.POSTGRESQL_DATABASE,
+                                            PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder(),
+                                            PostgresPlaceholderProperty.DATABASE_DESCRIPTION.getPlaceholder(),
+                                            PlaceholderProperty.SERVER_NAME.getPlaceholder(),
+                                            PostgresPlaceholderProperty.DATABASE_USER_ID.getPlaceholder(),
+                                            PostgresPlaceholderProperty.DATABASE_PASSWORD.getPlaceholder(),
+                                            provider.getConnectorType().getGUID(),
+                                            "jdbc:postgresql://" +
                                                          PlaceholderProperty.HOST_IDENTIFIER.getPlaceholder() + ":" +
                                                          PlaceholderProperty.PORT_NUMBER.getPlaceholder() + "/" + PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder(),
-                                              null,
-                                              null,
-                                              placeholderPropertyTypes);
+                                            null,
+                                            null,
+                                            placeholderPropertyTypes);
     }
 
 
@@ -2627,25 +2750,28 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addPostgresDatabaseSchemaCatalogTemplate()
     {
+        final String guid = "82a5417c-d882-4271-8444-4c6a996a8bfc";
+
         JDBCResourceConnectorProvider provider = new JDBCResourceConnectorProvider();
 
         List<PlaceholderPropertyType>  placeholderPropertyTypes = PostgresPlaceholderProperty.getPostgresSchemaPlaceholderPropertyTypes();
 
-        this.createServerAssetCatalogTemplate(DeployedImplementationType.POSTGRESQL_DATABASE_SCHEMA,
-                                              PostgresPlaceholderProperty.SCHEMA_NAME.getPlaceholder(),
-                                              PostgresPlaceholderProperty.SCHEMA_DESCRIPTION.getPlaceholder(),
-                                              PlaceholderProperty.SERVER_NAME.getPlaceholder() + "." + PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder(),
-                                              PostgresPlaceholderProperty.DATABASE_USER_ID.getPlaceholder(),
-                                              PostgresPlaceholderProperty.DATABASE_PASSWORD.getPlaceholder(),
-                                              provider.getConnectorType().getGUID(),
-                                              "jdbc:postgresql://" +
+        this.createDataAssetCatalogTemplate(guid,
+                                            DeployedImplementationType.POSTGRESQL_DATABASE_SCHEMA,
+                                            PostgresPlaceholderProperty.SCHEMA_NAME.getPlaceholder(),
+                                            PostgresPlaceholderProperty.SCHEMA_DESCRIPTION.getPlaceholder(),
+                                            PlaceholderProperty.SERVER_NAME.getPlaceholder() + "." + PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder(),
+                                            PostgresPlaceholderProperty.DATABASE_USER_ID.getPlaceholder(),
+                                            PostgresPlaceholderProperty.DATABASE_PASSWORD.getPlaceholder(),
+                                            provider.getConnectorType().getGUID(),
+                                            "jdbc:postgresql://" +
                                                       PlaceholderProperty.HOST_IDENTIFIER.getPlaceholder() + ":" +
                                                       PlaceholderProperty.PORT_NUMBER.getPlaceholder() + "/" +
                                                       PostgresPlaceholderProperty.DATABASE_NAME.getPlaceholder() + "?currentSchema=" +
                                                       PostgresPlaceholderProperty.SCHEMA_NAME.getPlaceholder(),
-                                              null,
-                                              null,
-                                              placeholderPropertyTypes);
+                                            null,
+                                            null,
+                                            placeholderPropertyTypes);
     }
 
 
@@ -2654,6 +2780,8 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     private void addKafkaTopicCatalogTemplate()
     {
+        final String guid = "ea8f81c9-c59c-47de-9525-7cc59d1251e5";
+
         KafkaOpenMetadataTopicProvider provider = new KafkaOpenMetadataTopicProvider();
 
         List<PlaceholderPropertyType>  placeholderPropertyTypes = KafkaPlaceholderProperty.getKafkaTopicPlaceholderPropertyTypes();
@@ -2669,17 +2797,18 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
         configurationProperties.put("producer", bootstrapServersProperties);
         configurationProperties.put("consumer", bootstrapServersProperties);
 
-        this.createServerAssetCatalogTemplate(DeployedImplementationType.APACHE_KAFKA_TOPIC,
-                                              KafkaPlaceholderProperty.SHORT_TOPIC_NAME.getPlaceholder(),
-                                              KafkaPlaceholderProperty.TOPIC_DESCRIPTION.getPlaceholder(),
-                                              PlaceholderProperty.SERVER_NAME.getPlaceholder() + "." + KafkaPlaceholderProperty.FULL_TOPIC_NAME.getPlaceholder() + ":inOut",
-                                              null,
-                                              null,
-                                              provider.getConnectorType().getGUID(),
-                                              KafkaPlaceholderProperty.FULL_TOPIC_NAME.getPlaceholder(),
-                                              configurationProperties,
-                                              null,
-                                              placeholderPropertyTypes);
+        this.createDataAssetCatalogTemplate(guid,
+                                            DeployedImplementationType.APACHE_KAFKA_TOPIC,
+                                            KafkaPlaceholderProperty.SHORT_TOPIC_NAME.getPlaceholder(),
+                                            KafkaPlaceholderProperty.TOPIC_DESCRIPTION.getPlaceholder(),
+                                            PlaceholderProperty.SERVER_NAME.getPlaceholder() + "." + KafkaPlaceholderProperty.FULL_TOPIC_NAME.getPlaceholder() + ":inOut",
+                                            null,
+                                            null,
+                                            provider.getConnectorType().getGUID(),
+                                            KafkaPlaceholderProperty.FULL_TOPIC_NAME.getPlaceholder(),
+                                            configurationProperties,
+                                            null,
+                                            placeholderPropertyTypes);
     }
 
 
@@ -3341,15 +3470,17 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      *
      * @param resourceUse how is this
      * @param provider connector provider
+     * @param governanceServiceDescription description of the underlying service
      * @return governance action description
      */
-    private GovernanceActionDescription getGovernanceActionDescription(ResourceUse                   resourceUse,
-                                                                       GovernanceServiceProviderBase provider,
-                                                                       String                        governanceServiceDescription)
+    private GovernanceActionDescription getGovernanceActionDescription(ResourceUse                      resourceUse,
+                                                                       GovernanceServiceProviderBase    provider,
+                                                                       String                           governanceServiceDescription)
     {
         GovernanceActionDescription governanceActionDescription = new GovernanceActionDescription();
 
         governanceActionDescription.resourceUse                  = resourceUse;
+        governanceActionDescription.supportedTechnologies        = provider.getSupportedTechnologyTypes();
         governanceActionDescription.supportedRequestTypes        = provider.getSupportedRequestTypes();
         governanceActionDescription.supportedRequestParameters   = provider.getSupportedRequestParameters();
         governanceActionDescription.supportedActionTargets       = provider.getSupportedActionTargetTypes();
@@ -3579,17 +3710,18 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
      */
     static class GovernanceActionDescription
     {
-        String                     governanceServiceGUID        = null;
-        String                     governanceServiceDescription = null;
-        List<RequestTypeType>      supportedRequestTypes        = null;
-        List<RequestParameterType> supportedRequestParameters   = null;
-        List<ActionTargetType>     supportedActionTargets       = null;
-        List<AnalysisStepType>     supportedAnalysisSteps       = null;
-        List<AnnotationTypeType>   supportedAnnotationTypes     = null;
-        List<RequestParameterType> producedRequestParameters    = null;
-        List<ActionTargetType>     producedActionTargets        = null;
-        List<GuardType>            producedGuards               = null;
-        ResourceUse                resourceUse                  = null;
+        String                        governanceServiceGUID        = null;
+        String                        governanceServiceDescription = null;
+        List<SupportedTechnologyType> supportedTechnologies        = null;
+        List<RequestTypeType>         supportedRequestTypes        = null;
+        List<RequestParameterType>    supportedRequestParameters   = null;
+        List<ActionTargetType>        supportedActionTargets       = null;
+        List<AnalysisStepType>        supportedAnalysisSteps       = null;
+        List<AnnotationTypeType>      supportedAnnotationTypes     = null;
+        List<RequestParameterType>    producedRequestParameters    = null;
+        List<ActionTargetType>        producedActionTargets        = null;
+        List<GuardType>               producedGuards               = null;
+        ResourceUse                   resourceUse                  = null;
     }
 
 
@@ -3651,37 +3783,40 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                                           null,
                                                           governanceEngineGUID);
 
-                for (ActionTargetType actionTargetType : governanceActionDescription.supportedActionTargets)
+                if (governanceActionDescription.supportedTechnologies != null)
                 {
-                    if (actionTargetType != null)
+                    for (SupportedTechnologyType supportedTechnology : governanceActionDescription.supportedTechnologies)
                     {
-                        if (actionTargetType.getTypeName() != null)
+                        if (supportedTechnology != null)
                         {
-                            String openMetadataTypeGUID = openMetadataTypeGUIDs.get(actionTargetType.getTypeName());
-
-                            if (openMetadataTypeGUID != null)
+                            if (supportedTechnology.getDataType() != null)
                             {
-                                archiveHelper.addResourceListRelationshipByGUID(openMetadataTypeGUID,
-                                                                                governanceActionTypeGUID,
-                                                                                governanceActionDescription.resourceUse.getResourceUse(),
-                                                                                governanceActionDescription.governanceServiceDescription,
-                                                                                requestParameters,
-                                                                                false);
+                                String openMetadataTypeGUID = openMetadataTypeGUIDs.get(supportedTechnology.getDataType());
+
+                                if (openMetadataTypeGUID != null)
+                                {
+                                    archiveHelper.addResourceListRelationshipByGUID(openMetadataTypeGUID,
+                                                                                    governanceActionTypeGUID,
+                                                                                    governanceActionDescription.resourceUse.getResourceUse(),
+                                                                                    governanceActionDescription.governanceServiceDescription,
+                                                                                    requestParameters,
+                                                                                    false);
+                                }
                             }
-                        }
 
-                        if (actionTargetType.getDeployedImplementationType() != null)
-                        {
-                            String deployedImplementationTypeGUID = deployedImplementationTypeGUIDs.get(actionTargetType.getDeployedImplementationType());
-
-                            if (deployedImplementationTypeGUID != null)
+                            if (supportedTechnology.getName() != null)
                             {
-                                archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
-                                                                                governanceActionTypeGUID,
-                                                                                governanceActionDescription.resourceUse.getResourceUse(),
-                                                                                governanceActionDescription.governanceServiceDescription,
-                                                                                requestParameters,
-                                                                                false);
+                                String deployedImplementationTypeGUID = deployedImplementationTypeGUIDs.get(supportedTechnology.getName());
+
+                                if (deployedImplementationTypeGUID != null)
+                                {
+                                    archiveHelper.addResourceListRelationshipByGUID(deployedImplementationTypeGUID,
+                                                                                    governanceActionTypeGUID,
+                                                                                    governanceActionDescription.resourceUse.getResourceUse(),
+                                                                                    governanceActionDescription.governanceServiceDescription,
+                                                                                    requestParameters,
+                                                                                    false);
+                                }
                             }
                         }
                     }
@@ -4099,7 +4234,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
 
 
     /**
-     * Create an entity for the UC Server Survey governance service.
+     * Create an entity for the UC Catalog Survey governance service.
      *
      * @return unique identifier for the governance service
      */
@@ -4110,6 +4245,38 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
         final String surveyServiceProviderClassName = OSSUnityCatalogInsideCatalogSurveyProvider.class.getName();
 
         OSSUnityCatalogInsideCatalogSurveyProvider provider = new OSSUnityCatalogInsideCatalogSurveyProvider();
+
+        final String surveyServiceDescription = provider.getConnectorType().getDescription();
+
+        GovernanceActionDescription governanceActionDescription = getGovernanceActionDescription(ResourceUse.SURVEY_RESOURCE,
+                                                                                                 provider,
+                                                                                                 surveyServiceDescription);
+
+        governanceActionDescription.governanceServiceGUID = archiveHelper.addGovernanceService(DeployedImplementationType.SURVEY_ACTION_SERVICE_CONNECTOR,
+                                                                                               surveyServiceProviderClassName,
+                                                                                               null,
+                                                                                               surveyServiceName,
+                                                                                               surveyServiceDisplayName,
+                                                                                               surveyServiceDescription,
+                                                                                               null);
+
+        return governanceActionDescription;
+    }
+
+
+
+    /**
+     * Create an entity for the UC Schema Survey governance service.
+     *
+     * @return unique identifier for the governance service
+     */
+    private GovernanceActionDescription getUCSchemaSurveyService()
+    {
+        final String surveyServiceName = "oss-unity-catalog-inside-schema-survey-service";
+        final String surveyServiceDisplayName = "OSS Unity Catalog Inside Schema Survey Service";
+        final String surveyServiceProviderClassName = OSSUnityCatalogInsideSchemaSurveyProvider.class.getName();
+
+        OSSUnityCatalogInsideSchemaSurveyProvider provider = new OSSUnityCatalogInsideSchemaSurveyProvider();
 
         final String surveyServiceDescription = provider.getConnectorType().getDescription();
 
@@ -4359,7 +4526,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                         String                      governanceEngineName,
                                         GovernanceActionDescription governanceActionDescription)
     {
-        final String governanceRequestType = "survey-oss-unity-catalog-server";
+        final String governanceRequestType = "survey-unity-catalog-server";
 
         this.addRequestType(governanceEngineGUID,
                             governanceEngineName,
@@ -4382,7 +4549,7 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                                          String                      governanceEngineName,
                                          GovernanceActionDescription governanceActionDescription)
     {
-        final String governanceRequestType = "survey-inside-an-oss-uc-catalog";
+        final String governanceRequestType = "survey-unity-catalog-catalog";
 
         this.addRequestType(governanceEngineGUID,
                             governanceEngineName,
@@ -4392,6 +4559,54 @@ public class CoreContentArchiveWriter extends OMRSArchiveWriter
                             null,
                             governanceActionDescription);
     }
+
+
+
+    /**
+     * Create the relationship between a governance engine and a governance service that defines the request type.
+     *
+     * @param governanceEngineGUID unique identifier of the engine
+     * @param governanceEngineName unique name of the governance engine
+     * @param governanceActionDescription details for calling the governance service
+     */
+    private void addUCSchemaRequestType(String                      governanceEngineGUID,
+                                        String                      governanceEngineName,
+                                        GovernanceActionDescription governanceActionDescription)
+    {
+        final String governanceRequestType = "survey-unity-catalog-schema";
+
+        this.addRequestType(governanceEngineGUID,
+                            governanceEngineName,
+                            OpenMetadataType.SURVEY_ACTION_ENGINE.typeName,
+                            governanceRequestType,
+                            null,
+                            null,
+                            governanceActionDescription);
+    }
+
+
+    /**
+     * Create the relationship between a governance engine and a governance service that defines the request type.
+     *
+     * @param governanceEngineGUID unique identifier of the engine
+     * @param governanceEngineName unique name of the governance engine
+     * @param governanceActionDescription details for calling the governance service
+     */
+    private void addUCVolumeRequestType(String                      governanceEngineGUID,
+                                        String                      governanceEngineName,
+                                        GovernanceActionDescription governanceActionDescription)
+    {
+        final String governanceRequestType = "survey-unity-catalog-volume";
+
+        this.addRequestType(governanceEngineGUID,
+                            governanceEngineName,
+                            OpenMetadataType.SURVEY_ACTION_ENGINE.typeName,
+                            governanceRequestType,
+                            null,
+                            null,
+                            governanceActionDescription);
+    }
+
 
     /**
      * Create the relationship between a governance engine and a governance service that defines the request type.
